@@ -1,0 +1,19 @@
+[package]
+name = "rusty_witcher_debugger"
+version = "0.1.0"
+edition = "2021"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+# The core of RWD features containing all the commands
+[lib]
+name    = "rusty_witcher_debugger_core"
+path    = "src/core/core.rs"
+
+# CLI adapter for the RWD core
+[[bin]]
+name    = "rusty_witcher_debugger_cli"
+path    = "src/cli/cli.rs"
+
+[dependencies]
+# encoding = "0.2"
