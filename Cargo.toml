@@ -16,4 +16,3 @@ name    = "rusty_witcher_debugger_cli"
 path    = "src/cli/cli.rs"
 
 [dependencies]
-# encoding = "0.2"
