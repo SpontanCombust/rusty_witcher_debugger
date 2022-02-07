@@ -59,7 +59,7 @@ impl WitcherPacketData {
                 bytes.extend(data.as_bytes());
             }
             WitcherPacketData::StringUTF16(data) => {
-                let len_bytes = ( data.len() as i16 ).to_be_bytes();
+                let len_bytes = ( data.chars().count() as i16 ).to_be_bytes();
 
                 let encoded: Vec<u8> = 
                     data.encode_utf16()
