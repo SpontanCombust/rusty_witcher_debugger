@@ -25,7 +25,7 @@ fn main() {
         Some(mut stream) => {
             println!("Successfully connected to the game!");
 
-            let bind_cmd = commands::bind("scripts");
+            let bind_cmd = commands::listen("scripts");
             stream.write( bind_cmd.to_bytes().as_slice() ).unwrap();
 
             match WitcherPacket::from_stream(&mut stream) {
