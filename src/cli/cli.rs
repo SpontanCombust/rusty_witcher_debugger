@@ -1,7 +1,7 @@
 use std::net::{TcpStream};
 use std::io::{Write};
 use std::{thread, time};
-use rusty_witcher_debugger_core::{ constants, commands, packet::WitcherPacket };
+use rw3d_core::{ constants, commands, packet::WitcherPacket };
 
 fn main() {
     let mut connection : Option<TcpStream> = None;
