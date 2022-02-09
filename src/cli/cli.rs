@@ -23,6 +23,8 @@ struct Cli {
 
 #[derive(Subcommand)]
 enum CliCommands {
+    /// Get the root path to game scripts
+    Root,
     /// Reload game scripts
     Reload,
     /// Run an exec function in the game
@@ -58,6 +60,9 @@ fn main() {
                 CliCommands::Exec { cmd } => {
                     commands::scripts_execute(&cmd)
                 }
+                CliCommands::Root => {
+                    commands::scripts_root_path()
+                }
             };
             stream.write( p.to_bytes().as_slice() ).unwrap();
 
@@ -90,7 +95,9 @@ fn try_connect(ip: String, max_tries: u8, tries_delay_ms: u64) -> Option<TcpStre
             Ok(conn) => {
                 return Some(conn);
             }
-            Err(_) => ()
+            Err(e) => {
+                println!("{}", e);
+            }
         }
 
         tries -= 1;
@@ -125,7 +132,6 @@ fn reader_thread<T>(mut stream: TcpStream, cancel_token: Receiver<T>) {
             }
             Err(e) => {
                 println!("{}", e);
-                stream.shutdown(Shutdown::Both).unwrap();
                 break;
             }
         }
@@ -145,14 +151,16 @@ fn reader_thread<T>(mut stream: TcpStream, cancel_token: Receiver<T>) {
         }
     }
 
-    stream.shutdown(Shutdown::Both).unwrap();
+    if let Err(e) = stream.shutdown(Shutdown::Both) {
+        println!("{}", e);
+    }
 }
 
 fn pause() {
     let mut line = String::new();
     let stdin = io::stdin();
 
-    println!("Press any key to exit.\n");
+    println!("Press any key to exit after you're done reading the output.\n");
     // read a single byte and discard
     let _ = stdin.lock().read_line(&mut line);
 }
