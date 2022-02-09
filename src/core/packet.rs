@@ -65,6 +65,7 @@ impl WitcherPacket {
         bytes
     }
 
+    /// Will block until is able to read all the data it needs or encounters an error
     pub fn from_stream<S>( stream: &mut S ) -> Result<WitcherPacket, String> where S: Read {
         let err = String::from("Failed to read packet from stream - ");
         let mut short_buffer = [0,0];
