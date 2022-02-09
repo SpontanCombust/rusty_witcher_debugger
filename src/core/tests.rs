@@ -1,5 +1,4 @@
-use crate::packet::WitcherPacketData;
-use crate::{commands, packet::WitcherPacket};
+use crate::{packet_data::WitcherPacketData, commands, packet::WitcherPacket};
 
 #[test]
 fn packet_data_int8_parse_test() {
