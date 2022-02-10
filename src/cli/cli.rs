@@ -1,6 +1,6 @@
 use std::net::{TcpStream, Shutdown};
 use std::io::{self, Write, BufRead};
-use std::sync::mpsc::{Receiver, TryRecvError};
+use std::sync::mpsc::{Receiver, TryRecvError, Sender};
 use std::time::Duration;
 use std::{thread, time};
 
@@ -16,13 +16,23 @@ struct Cli {
     #[clap(long, default_value="127.0.0.1")]
     ip: String,
 
-    /// Option to disable messages sent from the game
+    /// Exit the program almost immediately after executing the command without listening to responses coming from the game
     #[clap(long)]
     no_listen: bool,
 
-    /// Option to enable verbose printing of packet contents
+    /// Enable verbose printing of packet contents
     #[clap(long)]
     verbose: bool,
+
+    /// Execute command immediately without doing short breaks between info messages beforehand
+    #[clap(long)]
+    no_info_wait: bool,
+
+    /// The maximum amount of milliseconds that program should wait for any game messages until it will automatically exit.
+    /// This setting is ignored if --no-listen is set.
+    /// If set to a negative number will wait indefinitely for user's input.
+    #[clap(long, short, default_value_t=-1)]
+    response_timeout: i64,
 
     /// Command to use
     #[clap(subcommand)]
@@ -47,17 +57,28 @@ fn main() {
 
     match connection {
         Some(mut stream) => {
+            if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(1000) ) }
             println!("Successfully connected to the game!");
 
             if !cli.no_listen {
+                if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(1000) ) }
                 println!("Setting up listeners...");
+
                 let listeners = commands::listen_all();
                 for l in &listeners {
                     stream.write( l.to_bytes().as_slice() ).unwrap();
                 }
             }
 
+            if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(1000) ) }
+
+            if !cli.no_info_wait || !cli.no_listen { 
+                println!("\nYou can press Enter at any moment to exit the program.");
+            }
+            if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(1000) ) }
+
             println!("Handling the command...\n");
+
             let p = match &cli.command {
                 CliCommands::Reload => {
                     commands::scripts_reload()
@@ -72,18 +93,29 @@ fn main() {
             stream.write( p.to_bytes().as_slice() ).unwrap();
 
 
-            // channel to communicate to the reader thread to stop execution
-            let (snd, rcv) = std::sync::mpsc::channel();
-            // thread that will read messages coming from the game
-            let reader = std::thread::spawn(move || reader_thread(stream, rcv, cli.verbose));
+            if !cli.no_listen {
+                if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(2000) ) }
+    
+                // Channel to communicate to and from the the reader
+                let (reader_snd, reader_rcv) = std::sync::mpsc::channel();
+    
+                // This thread is not expected to finish, so we won't assign a handle to it
+                // Takes reader_snd so it can communicate to the reader thread to stop execution when user presses Enter
+                std::thread::spawn(move || input_waiter_thread(reader_snd) );
+    
+                // This function can either finish by itself by the means of response timeout
+                // or be stopped by input waiter thread if that one sends him a signal
+                read_messages(&mut stream, cli.response_timeout, reader_rcv, cli.verbose);
 
+            } else {
+                // Wait a little bit to not finish the connection abruptly
+                thread::sleep( time::Duration::from_millis(500) );        
+            }
 
-            // wait for the user to press Enter so the program can be stopped after they read the output from reader thread
-            pause();
+            if let Err(e) = stream.shutdown(Shutdown::Both) {
+                println!("{}", e);
+            }
 
-            // terminate reader thread
-            let _ = snd.send(());
-            reader.join().unwrap();
         }
         None => {
             println!("Failed to connect to the game on address {}", cli.ip);
@@ -115,14 +147,20 @@ fn try_connect(ip: String, max_tries: u8, tries_delay_ms: u64) -> Option<TcpStre
     None
 }
 
-fn reader_thread(mut stream: TcpStream, cancel_token: Receiver<()>, verbose_print: bool ) {
+fn input_waiter_thread(sender: Sender<()>) {
+    let mut line = String::new();
+    io::stdin().lock().read_line(&mut line).unwrap();
+    sender.send(()).unwrap();
+}
+
+fn read_messages(stream: &mut TcpStream, response_timeout: i64, cancel_token: Receiver<()>, verbose_print: bool ) {
     let mut peek_buffer = [0u8;6];
     let mut packet_available: bool;
-    let mut times_waited: u8 = 0;
+    let mut response_wait_elapsed: i64 = 0;
 
-    const TIMEOUT: u64 = 1000;
+    const READ_TIMEOUT: i64 = 1000;
     // Timeout is set so that the peek operation won't block the thread indefinitely after it runs out of data to read
-    stream.set_read_timeout( Some(Duration::from_millis(TIMEOUT)) ).unwrap();
+    stream.set_read_timeout( Some(Duration::from_millis(READ_TIMEOUT as u64)) ).unwrap();
 
     loop {
         // test if the thread has been ordered to stop
@@ -145,7 +183,7 @@ fn reader_thread(mut stream: TcpStream, cancel_token: Receiver<()>, verbose_prin
         }
 
         if packet_available {
-            match WitcherPacket::from_stream(&mut stream) {
+            match WitcherPacket::from_stream(stream) {
                 Ok(packet) => {
                     if verbose_print {
                         println!("{:?}", packet);
@@ -159,28 +197,16 @@ fn reader_thread(mut stream: TcpStream, cancel_token: Receiver<()>, verbose_prin
                 }
             }
 
-            times_waited = 0;
+            response_wait_elapsed = 0;
 
         } else {
-            // if peek returned with no data it meant that it blocked for TIMEOUT amount of milliseconds
-            times_waited += 1;
+            // if not available it means peek probably waited TIMEOUT millis before it returned
+            response_wait_elapsed += READ_TIMEOUT;
 
-            // If the thread waited enough time (here: 2 seconds) it will once display this message
-            if times_waited == 2 {
-                println!("\nPress Enter to exit.");
+            if response_timeout >= 0 && response_wait_elapsed >= response_timeout {
+                println!("\nGame response timeout reached.");
+                break;
             }
         }
     }
-
-    if let Err(e) = stream.shutdown(Shutdown::Both) {
-        println!("{}", e);
-    }
-}
-
-fn pause() {
-    let mut line = String::new();
-    let stdin = io::stdin();
-
-    // read a single byte and discard
-    let _ = stdin.lock().read_line(&mut line);
 }
