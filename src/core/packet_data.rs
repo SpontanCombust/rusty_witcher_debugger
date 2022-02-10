@@ -189,7 +189,7 @@ impl WitcherPacketData {
 
 
 
-impl std::fmt::Display for WitcherPacketData {
+impl std::fmt::Debug for WitcherPacketData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             Self::Int8(i) => {
@@ -213,6 +213,20 @@ impl std::fmt::Display for WitcherPacketData {
             Self::StringUTF16(s) => {
                 write!(f, "Type: StringUTF16\nLength: {}\nValue: {}", s.chars().count(), s)
             }
+        }
+    }
+}
+
+impl std::fmt::Display for WitcherPacketData {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Int8(i) => write!(f, "{}", i),
+            Self::Int16(i) => write!(f, "{}", i),
+            Self::Int32(i) => write!(f, "{}", i),
+            Self::UInt32(i) => write!(f, "{}", i),
+            Self::Int64(i) => write!(f, "{}", i),
+            Self::StringUTF8(s) => write!(f, "{}", s),
+            Self::StringUTF16(s) => write!(f, "{}", s)
         }
     }
 }

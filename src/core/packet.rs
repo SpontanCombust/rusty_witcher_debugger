@@ -111,16 +111,25 @@ impl WitcherPacket {
 
 
 
-impl std::fmt::Display for WitcherPacket {
+impl std::fmt::Debug for WitcherPacket {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.write_str("---------------------------------------------------\n")?;
         f.write_fmt( format_args!("                PACKET ({} bytes)\n", self.size()) )?;
         f.write_str("---------------------------------------------------")?;
         for p in &self.payload {
-            f.write_fmt( format_args!("\n{}\n", p) )?;
+            f.write_fmt( format_args!("\n{:?}\n", p) )?;
         }
         f.write_str("---------------------------------------------------")?;
         
+        Ok(())
+    }
+}
+
+impl std::fmt::Display for WitcherPacket {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        for p in &self.payload {
+            f.write_fmt( format_args!("{} ", p) )?;
+        }
         Ok(())
     }
 }

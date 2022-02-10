@@ -14,9 +14,16 @@ struct Cli {
     /// IPv4 address of the machine on which the game is run
     #[clap(long, default_value="127.0.0.1")]
     ip: String,
+
     /// Option to disable messages sent from the game
     #[clap(long)]
     no_listen: bool,
+
+    /// Option to enable verbose printing of packet contents
+    #[clap(long)]
+    verbose: bool,
+
+    /// Command to use
     #[clap(subcommand)]
     command: CliCommands,
 }
@@ -24,7 +31,7 @@ struct Cli {
 #[derive(Subcommand)]
 enum CliCommands {
     /// Get the root path to game scripts
-    Root,
+    RootPath,
     /// Reload game scripts
     Reload,
     /// Run an exec function in the game
@@ -60,7 +67,7 @@ fn main() {
                 CliCommands::Exec { cmd } => {
                     commands::scripts_execute(&cmd)
                 }
-                CliCommands::Root => {
+                CliCommands::RootPath => {
                     commands::scripts_root_path()
                 }
             };
@@ -69,7 +76,7 @@ fn main() {
             small_delay();
 
             let (snd, rcv) = std::sync::mpsc::channel();
-            std::thread::spawn(move || reader_thread(stream, rcv));
+            std::thread::spawn(move || reader_thread(stream, rcv, cli.verbose));
 
             // wait for any key in the main thread to exit
             pause();
@@ -113,7 +120,7 @@ fn small_delay() {
     }
 }
 
-fn reader_thread<T>(mut stream: TcpStream, cancel_token: Receiver<T>) {
+fn reader_thread(mut stream: TcpStream, cancel_token: Receiver<()>, verbose_print: bool ) {
     let mut peek_buffer = [0u8;6];
     let mut packet_available: bool;
     loop {
@@ -139,7 +146,11 @@ fn reader_thread<T>(mut stream: TcpStream, cancel_token: Receiver<T>) {
         if packet_available {
             match WitcherPacket::from_stream(&mut stream) {
                 Ok(packet) => {
-                    println!("{}", packet);
+                    if verbose_print {
+                        println!("{:?}", packet);
+                    } else {
+                        println!("{}", packet);
+                    }
                 }
                 Err(e) => {
                     println!("{}", e);
@@ -160,7 +171,7 @@ fn pause() {
     let mut line = String::new();
     let stdin = io::stdin();
 
-    println!("Press any key to exit after you're done reading the output.\n");
+    println!("Press Enter to exit after you're done reading the output.\n");
     // read a single byte and discard
     let _ = stdin.lock().read_line(&mut line);
 }
