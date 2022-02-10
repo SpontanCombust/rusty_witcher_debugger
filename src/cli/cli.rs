@@ -9,7 +9,7 @@ use clap::{Parser, Subcommand};
 
 
 #[derive(Parser)]
-#[clap(name="Rusty Witcher 3 Debugger", version="0.2")]
+#[clap(name="Rusty Witcher 3 Debugger", version="0.3")]
 #[clap(about="A standalone debugging tool for The Witcher 3 written in Rust", long_about=None)]
 struct Cli {
     /// IPv4 address of the machine on which the game is run
@@ -42,11 +42,46 @@ struct Cli {
 #[derive(Subcommand)]
 enum CliCommands {
     /// Get the root path to game scripts
-    RootPath,
+    Rootpath,
     /// Reload game scripts
     Reload,
     /// Run an exec function in the game
-    Exec{ cmd: String },
+    Exec{
+        /// Command to be run in the game
+        cmd: String 
+    },
+    /// Get the list of mods installed
+    Modlist,
+    /// Get opcode of a script function
+    Opcode {
+        /// Name of the function
+        #[clap(short)]
+        func_name: String, 
+        /// Name of the class; can be empty
+        #[clap(short)]
+        class_name: Option<String> 
+    },
+    /// Search for config variables
+    Varlist {
+        /// Var section to search; if left empty searches all sections
+        #[clap(short)]
+        section: Option<String>,
+        /// Token that should be included in vars; if left empty searches all variables
+        #[clap(short)]
+        name: Option<String>
+    },
+    /// Sets a config variable
+    Varset {
+        /// Variable's section
+        #[clap(short)]
+        section: String,
+        /// Variable's name
+        #[clap(short)]
+        name: String,
+        /// Variable's new value
+        #[clap(short)]
+        value: String
+    }
 }
 
 
@@ -70,31 +105,45 @@ fn main() {
                 }
             }
 
+
             if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(1000) ) }
+            println!("Handling the command...");
 
-            if !cli.no_info_wait || !cli.no_listen { 
-                println!("\nYou can press Enter at any moment to exit the program.");
-            }
-            if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(1000) ) }
-
-            println!("Handling the command...\n");
-
-            let p = match &cli.command {
+            let p = match cli.command {
                 CliCommands::Reload => {
                     commands::scripts_reload()
                 }
                 CliCommands::Exec { cmd } => {
-                    commands::scripts_execute(&cmd)
+                    commands::scripts_execute(cmd)
                 }
-                CliCommands::RootPath => {
+                CliCommands::Rootpath => {
                     commands::scripts_root_path()
                 }
+                CliCommands::Modlist => {
+                    commands::mod_list()
+                }
+                CliCommands::Opcode { func_name, class_name } => {
+                    commands::opcode(func_name, class_name)
+                }
+                CliCommands::Varlist { section, name } => {
+                    commands::var_list(section, name)
+                }
+                CliCommands::Varset { section, name, value } => {
+                    commands::var_set(section, name, value)
+                }
             };
+
             stream.write( p.to_bytes().as_slice() ).unwrap();
 
 
+            if !cli.no_info_wait || !cli.no_listen { 
+                println!("\nYou can press Enter at any moment to exit the program.\n");
+                if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(3000) ) }
+            }
+
             if !cli.no_listen {
-                if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(2000) ) }
+                println!("Game response:\n");
+                if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(1000) ) }
     
                 // Channel to communicate to and from the the reader
                 let (reader_snd, reader_rcv) = std::sync::mpsc::channel();
@@ -105,7 +154,7 @@ fn main() {
     
                 // This function can either finish by itself by the means of response timeout
                 // or be stopped by input waiter thread if that one sends him a signal
-                read_messages(&mut stream, cli.response_timeout, reader_rcv, cli.verbose);
+                read_responses(&mut stream, cli.response_timeout, reader_rcv, cli.verbose);
 
             } else {
                 // Wait a little bit to not finish the connection abruptly
@@ -153,7 +202,7 @@ fn input_waiter_thread(sender: Sender<()>) {
     sender.send(()).unwrap();
 }
 
-fn read_messages(stream: &mut TcpStream, response_timeout: i64, cancel_token: Receiver<()>, verbose_print: bool ) {
+fn read_responses(stream: &mut TcpStream, response_timeout: i64, cancel_token: Receiver<()>, verbose_print: bool ) {
     let mut peek_buffer = [0u8;6];
     let mut packet_available: bool;
     let mut response_wait_elapsed: i64 = 0;
