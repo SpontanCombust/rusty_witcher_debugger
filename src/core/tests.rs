@@ -137,7 +137,7 @@ mod tests {
     
     #[test]
     fn command_scripts_execute_parse_test() {
-        let p1 = commands::scripts_execute("additem('Aerondight', 1)");
+        let p1 = commands::scripts_execute("additem('Aerondight', 1)".to_owned());
         let bytes = p1.to_bytes();
         let p2 = WitcherPacket::from_stream( &mut bytes.as_slice() );
     
@@ -161,7 +161,7 @@ mod tests {
     
     #[test]
     fn command_opcode_parse_test() {
-        let p1 = commands::opcode("GetPlayerWitcher", None);
+        let p1 = commands::opcode("GetPlayerWitcher".to_owned(), None);
         let bytes = p1.to_bytes();
         let p2 = WitcherPacket::from_stream( &mut bytes.as_slice() );
     
@@ -171,7 +171,7 @@ mod tests {
         assert!( p1 == p2 );
         
         
-        let p1 = commands::opcode("onSpawned", Some("CR4Player"));
+        let p1 = commands::opcode("onSpawned".to_owned(), Some("CR4Player".to_owned()));
         let bytes = p1.to_bytes();
         let p2 = WitcherPacket::from_stream( &mut bytes.as_slice() );
     
@@ -193,7 +193,7 @@ mod tests {
         assert!( p1 == p2 );
         
         
-        let p1 = commands::var_list(Some("VarSection"), None);
+        let p1 = commands::var_list(Some("VarSection".to_owned()), None);
         let bytes = p1.to_bytes();
         let p2 = WitcherPacket::from_stream( &mut bytes.as_slice() );
     
@@ -203,7 +203,7 @@ mod tests {
         assert!( p1 == p2 );
     
     
-        let p1 = commands::var_list(None, Some("VarName"));
+        let p1 = commands::var_list(None, Some("VarName".to_owned()));
         let bytes = p1.to_bytes();
         let p2 = WitcherPacket::from_stream( &mut bytes.as_slice() );
     
@@ -213,7 +213,7 @@ mod tests {
         assert!( p1 == p2 );
     
     
-        let p1 = commands::var_list(Some("VarSection"), Some("VarName"));
+        let p1 = commands::var_list(Some("VarSection".to_owned()), Some("VarName".to_owned()));
         let bytes = p1.to_bytes();
         let p2 = WitcherPacket::from_stream( &mut bytes.as_slice() );
     
@@ -225,7 +225,7 @@ mod tests {
     
     #[test]
     fn command_var_set_parse_test() {
-        let p1 = commands::var_set("VarSection", "VarName", "false");
+        let p1 = commands::var_set("VarSection".to_owned(), "VarName".to_owned(), "false".to_owned());
         let bytes = p1.to_bytes();
         let p2 = WitcherPacket::from_stream( &mut bytes.as_slice() );
     

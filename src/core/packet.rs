@@ -43,12 +43,20 @@ impl WitcherPacket {
         self.append( WitcherPacketData::Int64(data) )
     }
 
-    pub fn append_utf8(self, data: &str) -> Self {
+    pub fn append_utf8_raw(self, data: &str) -> Self {
         self.append( WitcherPacketData::StringUTF8(data.to_owned()) )
     }
 
-    pub fn append_utf16(self, data: &str) -> Self {
+    pub fn append_utf8(self, data: String) -> Self {
+        self.append( WitcherPacketData::StringUTF8(data) )
+    }
+
+    pub fn append_utf16_raw(self, data: &str) -> Self {
         self.append( WitcherPacketData::StringUTF16(data.to_owned()) )
+    }
+
+    pub fn append_utf16(self, data: String) -> Self {
+        self.append( WitcherPacketData::StringUTF16(data) )
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {
