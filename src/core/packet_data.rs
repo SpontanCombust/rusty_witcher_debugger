@@ -179,6 +179,10 @@ impl WitcherPacketData {
                         }
                     }
                 }
+                constants::PACKET_TAIL => {
+                    // fail-safe against packet tail that sometimes gets sent in the payload for some reason
+                    break;
+                }
                 _ => return Err( format!("{}Unknown type bytes: {:?}", err, type_bytes) ),
             }
         }
