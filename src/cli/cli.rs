@@ -4,12 +4,12 @@ use std::sync::mpsc::{Receiver, TryRecvError, Sender};
 use std::time::Duration;
 use std::{thread, time};
 
-use rw3d_core::{ constants, commands, packet::WitcherPacket };
+use rw3d_core::{ constants, commands, packet::WitcherPacket, scriptslog };
 use clap::{Parser, Subcommand};
 
 
 #[derive(Parser)]
-#[clap(name="Rusty Witcher 3 Debugger", version="0.3")]
+#[clap(name="Rusty Witcher 3 Debugger", version="0.4")]
 #[clap(about="A standalone debugging tool for The Witcher 3 written in Rust", long_about=None)]
 struct Cli {
     /// IPv4 address of the machine on which the game is run
@@ -39,7 +39,7 @@ struct Cli {
     command: CliCommands,
 }
 
-#[derive(Subcommand)]
+#[derive(Subcommand, PartialEq, Eq)]
 enum CliCommands {
     /// Get the root path to game scripts
     Rootpath,
@@ -81,93 +81,115 @@ enum CliCommands {
         /// Variable's new value
         #[clap(short)]
         value: String
-    }
+    },
+    /// Prints game's script logs onto console
+    Scriptslog
 }
 
 
 fn main() {
     let cli = Cli::parse();
 
-    let connection = try_connect(cli.ip.clone(), 5, 1000);
-
-    match connection {
-        Some(mut stream) => {
-            if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(1000) ) }
-            println!("Successfully connected to the game!");
-
-            if !cli.no_listen {
+    if cli.command != CliCommands::Scriptslog {
+        let connection = try_connect(cli.ip.clone(), 5, 1000);
+    
+        match connection {
+            Some(mut stream) => {
                 if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(1000) ) }
-                println!("Setting up listeners...");
-
-                let listeners = commands::listen_all();
-                for l in &listeners {
-                    stream.write( l.to_bytes().as_slice() ).unwrap();
+                println!("Successfully connected to the game!");
+    
+                if !cli.no_listen {
+                    if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(1000) ) }
+                    println!("Setting up listeners...");
+    
+                    let listeners = commands::listen_all();
+                    for l in &listeners {
+                        stream.write( l.to_bytes().as_slice() ).unwrap();
+                    }
                 }
-            }
-
-
-            if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(1000) ) }
-            println!("Handling the command...");
-
-            let p = match cli.command {
-                CliCommands::Reload => {
-                    commands::scripts_reload()
-                }
-                CliCommands::Exec { cmd } => {
-                    commands::scripts_execute(cmd)
-                }
-                CliCommands::Rootpath => {
-                    commands::scripts_root_path()
-                }
-                CliCommands::Modlist => {
-                    commands::mod_list()
-                }
-                CliCommands::Opcode { func_name, class_name } => {
-                    commands::opcode(func_name, class_name)
-                }
-                CliCommands::Varlist { section, name } => {
-                    commands::var_list(section, name)
-                }
-                CliCommands::Varset { section, name, value } => {
-                    commands::var_set(section, name, value)
-                }
-            };
-
-            stream.write( p.to_bytes().as_slice() ).unwrap();
-
-
-            if !cli.no_info_wait || !cli.no_listen { 
-                println!("\nYou can press Enter at any moment to exit the program.\n");
-                if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(3000) ) }
-            }
-
-            if !cli.no_listen {
-                println!("Game response:\n");
+    
+    
                 if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(1000) ) }
+                println!("Handling the command...");
     
-                // Channel to communicate to and from the the reader
-                let (reader_snd, reader_rcv) = std::sync::mpsc::channel();
+                let p = match cli.command {
+                    CliCommands::Reload => {
+                        commands::scripts_reload()
+                    }
+                    CliCommands::Exec { cmd } => {
+                        commands::scripts_execute(cmd)
+                    }
+                    CliCommands::Rootpath => {
+                        commands::scripts_root_path()
+                    }
+                    CliCommands::Modlist => {
+                        commands::mod_list()
+                    }
+                    CliCommands::Opcode { func_name, class_name } => {
+                        commands::opcode(func_name, class_name)
+                    }
+                    CliCommands::Varlist { section, name } => {
+                        commands::var_list(section, name)
+                    }
+                    CliCommands::Varset { section, name, value } => {
+                        commands::var_set(section, name, value)
+                    }
+                    //FIXME code will need a makeover because of how scriptslog command makes the program behave differently
+                    // this is a temporary measure
+                    CliCommands::Scriptslog => panic!(),
+                };
     
-                // This thread is not expected to finish, so we won't assign a handle to it
-                // Takes reader_snd so it can communicate to the reader thread to stop execution when user presses Enter
-                std::thread::spawn(move || input_waiter_thread(reader_snd) );
+                stream.write( p.to_bytes().as_slice() ).unwrap();
     
-                // This function can either finish by itself by the means of response timeout
-                // or be stopped by input waiter thread if that one sends him a signal
-                read_responses(&mut stream, cli.response_timeout, reader_rcv, cli.verbose);
-
-            } else {
-                // Wait a little bit to not finish the connection abruptly
-                thread::sleep( time::Duration::from_millis(500) );        
+    
+                if !cli.no_info_wait || !cli.no_listen { 
+                    println!("\nYou can press Enter at any moment to exit the program.\n");
+                    if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(3000) ) }
+                }
+    
+                if !cli.no_listen {
+                    println!("Game response:\n");
+                    if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(1000) ) }
+        
+                    // Channel to communicate to and from the the reader
+                    let (reader_snd, reader_rcv) = std::sync::mpsc::channel();
+        
+                    // This thread is not expected to finish, so we won't assign a handle to it
+                    // Takes reader_snd so it can communicate to the reader thread to stop execution when user presses Enter
+                    std::thread::spawn(move || input_waiter_thread(reader_snd) );
+        
+                    // This function can either finish by itself by the means of response timeout
+                    // or be stopped by input waiter thread if that one sends him a signal
+                    read_responses(&mut stream, cli.response_timeout, reader_rcv, cli.verbose);
+    
+                } else {
+                    // Wait a little bit to not finish the connection abruptly
+                    thread::sleep( time::Duration::from_millis(500) );        
+                }
+    
+                if let Err(e) = stream.shutdown(Shutdown::Both) {
+                    println!("{}", e);
+                }
+    
             }
-
-            if let Err(e) = stream.shutdown(Shutdown::Both) {
-                println!("{}", e);
+            None => {
+                println!("Failed to connect to the game on address {}", cli.ip);
             }
-
         }
-        None => {
-            println!("Failed to connect to the game on address {}", cli.ip);
+
+    } else {
+        if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(1000) ) }
+        println!("Handling the command...");
+
+        let (logger_snd, logger_rcv) = std::sync::mpsc::channel();
+
+        std::thread::spawn(move || input_waiter_thread(logger_snd) );
+
+        println!("\nYou can press Enter at any moment to exit the program.\n");
+        if !cli.no_info_wait { thread::sleep( time::Duration::from_millis(3000) ) }
+
+        if let Some(err) = scriptslog::read_from_scriptslog(|s| print!("{}", s), 1000, logger_rcv) {
+            println!("{}", err);
         }
     }
 }
