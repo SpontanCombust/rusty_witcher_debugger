@@ -8,29 +8,41 @@ The main feature of it is to easily recompile game scripts at run time, which ca
 Parts of this code are based off of `Wolvenkit modding tool` by Traderain, rfuzzo and others
 https://github.com/WolvenKit/WolvenKit
 
+---
+
 
 ## Usage examples
-Tool help
+Tool help.
 ```ps1
 rw3d_cli.exe -h
 ```
 
-Recompile game scripts
+Recompile game scripts.
 ```ps1
 rw3d_cli.exe reload
 ```
 
-Remotely call an exec function from the game
+Recompile game scripts and automatically exit the program after the tool doesn't get any responses from the game in the span of 10 seconds after the last response.
 ```ps1
-rw3d_cli.exe exec additem('Aerondight', 1)
+rw3d_cli.exe --response-timeout=10000 reload
 ```
 
-Remotely call an exec function from the game without waiting for tool messages or any game response
+Remotely call an exec function from the game. Remember to use quotation marks when passing the argument if it has any spaces in it.
 ```ps1
-rw3d_cli.exe --no-info-wait --no-listen exec gotoProlog()
+rw3d_cli.exe exec "additem('Aerondight', 1)"
 ```
 
-Recompile game scripts and automatically exit the program after the tool doesn't get any responses from the game in the span of 5 seconds after the last response
+Remotely call an exec function from the game without waiting for tool messages or any game response.
 ```ps1
-rw3d_cli.exe --response-timeout=5000 reload
+rw3d_cli.exe --no-wait --no-listen exec "gotoProlog()"
+```
+
+Get the list of mods installed.
+```ps1
+rw3d_cli.exe modlist
+```
+
+Monitor game's scripts log and highlight specific lines. You can set multiple key words to be highlighted with the same color.
+```ps1
+rw3d_cli.exe scriptslog --yellow="[My mod]" --yellow="[Also my mod]"
 ```

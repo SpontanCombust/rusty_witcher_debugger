@@ -18,3 +18,4 @@ path    = "src/cli/cli.rs"
 [dependencies]
 clap = { version = "^3.0", features = ["derive"] }
 directories = "4.0"
+colored = "2.0"

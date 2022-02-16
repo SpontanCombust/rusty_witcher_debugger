@@ -8,7 +8,7 @@ use crate::constants;
 /// In case of error will return Some with that error message, otherwise will return None.
 /// For `printer` parameter you can pass any function or closure that you want to print log text with,
 /// the string passed to said printer will consist of one or more lines of text.
-pub fn read_from_scriptslog<P>( printer: P, refresh_time_millis: u64, cancel_token: Receiver<()> ) -> Option<String> 
+pub fn tail_scriptslog<P>( printer: P, refresh_time_millis: u64, cancel_token: Receiver<()> ) -> Option<String> 
 where P: Fn(&String) -> () {
     match scriptslog_file() {
         Ok(file) => {

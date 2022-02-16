@@ -1,6 +1,7 @@
 use std::{thread, time::Duration};
 
-use clap::Subcommand;
+use clap::{ Parser, Subcommand};
+use colored::{Colorize, Color};
 
 use crate::{input_waiter::input_waiter, CliOptions};
 
@@ -8,7 +9,32 @@ use crate::{input_waiter::input_waiter, CliOptions};
 #[derive(Subcommand)]
 pub(crate) enum LocalSubcommands {
     /// Prints game's script logs onto console
-    Scriptslog
+    Scriptslog {
+        /// Flags for setting highlight colors for lines that contain a certain string
+        /// Colors inside mean the color of the background of the highlighted line
+        #[clap(flatten)]
+        colors: ScriptslogColors
+    }
+}
+
+#[derive(Parser)]
+pub(crate) struct ScriptslogColors {
+    #[clap(long)]
+    black: Vec<String>,
+    #[clap(long)]
+    red: Vec<String>,
+    #[clap(long)]
+    green: Vec<String>,
+    #[clap(long)]
+    yellow: Vec<String>,
+    #[clap(long)]
+    blue: Vec<String>,
+    #[clap(long)]
+    magenta: Vec<String>,
+    #[clap(long)]
+    cyan: Vec<String>,
+    #[clap(long)]
+    white: Vec<String>,
 }
 
 pub(crate) fn handle_local_subcommand( cmd: LocalSubcommands, options: CliOptions ) {
@@ -23,10 +49,107 @@ pub(crate) fn handle_local_subcommand( cmd: LocalSubcommands, options: CliOption
     if !options.no_wait { thread::sleep( Duration::from_millis(3000) ) }
 
     match cmd {
-        LocalSubcommands::Scriptslog => {
-            if let Some(err) = rw3d_core::scriptslog::read_from_scriptslog(|s| print!("{}", s), 1000, logger_rcv) {
+        LocalSubcommands::Scriptslog { colors } => {
+            let highlights = scriptslog_colors_to_highlight_records(colors);
+            if let Some(err) = rw3d_core::scriptslog::tail_scriptslog(|s| scriptslog_printer(s, &highlights), 1000, logger_rcv) {
                 println!("{}", err);
             }
+        }
+    }
+}
+
+
+struct ScriptslogHighlightRecord {
+    pattern: String,
+    fg: Color,
+    bg: Color
+}
+
+fn scriptslog_colors_to_highlight_records(colors: ScriptslogColors) -> Vec<ScriptslogHighlightRecord> {
+    let mut colored = Vec::new();
+
+    for p in colors.black {
+        colored.push(ScriptslogHighlightRecord{
+            pattern: p,
+            fg: Color::White,
+            bg: Color::Black
+        });
+    }
+    for p in colors.red {
+        colored.push(ScriptslogHighlightRecord{
+            pattern: p,
+            fg: Color::White,
+            bg: Color::Red
+        });
+    }
+    for p in colors.green {
+        colored.push(ScriptslogHighlightRecord{
+            pattern: p,
+            fg: Color::Black,
+            bg: Color::Green
+        });
+    }
+    for p in colors.yellow {
+        colored.push(ScriptslogHighlightRecord{
+            pattern: p,
+            fg: Color::Black,
+            bg: Color::Yellow
+        });
+    }
+    for p in colors.blue {
+        colored.push(ScriptslogHighlightRecord{
+            pattern: p,
+            fg: Color::White,
+            bg: Color::Blue
+        });
+    }
+    for p in colors.magenta {
+        colored.push(ScriptslogHighlightRecord{
+            pattern: p,
+            fg: Color::White,
+            bg: Color::Magenta
+        });
+    }
+    for p in colors.cyan {
+        colored.push(ScriptslogHighlightRecord{
+            pattern: p,
+            fg: Color::Black,
+            bg: Color::Cyan
+        });
+    }
+    for p in colors.white {
+        colored.push(ScriptslogHighlightRecord{
+            pattern: p,
+            fg: Color::Black,
+            bg: Color::White
+        });
+    }
+
+    colored
+}
+
+// Just a constant to initialize coloring variables and to signal to not apply any highlighting if this color is detected
+// The color chosen is not used anywhere else for that matter
+const NO_COLORING_PLACEHOLDER: Color = Color::BrightBlack;
+
+fn scriptslog_printer( t: &String, highlights: &Vec<ScriptslogHighlightRecord> ) {
+    let lines = t.split("\n");
+
+    for line in lines {
+        let (mut fg, mut bg) = (NO_COLORING_PLACEHOLDER, NO_COLORING_PLACEHOLDER); 
+
+        for h in highlights {
+            if line.contains(&h.pattern) {
+                fg = h.fg;
+                bg = h.bg;
+                break;
+            }
+        }
+
+        if fg != NO_COLORING_PLACEHOLDER {
+            println!("{}", line.color(fg).on_color(bg));
+        } else {
+            println!("{}", line);
         }
     }
 }
