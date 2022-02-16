@@ -13,7 +13,15 @@ pub(crate) enum LocalSubcommands {
         /// Flags for setting highlight colors for lines that contain a certain string
         /// Colors inside mean the color of the background of the highlighted line
         #[clap(flatten)]
-        colors: ScriptslogColors
+        colors: ScriptslogColors,
+
+        /// How often should the log be refreshed, in millis
+        #[clap(short, long, default_value_t=1000)]
+        refresh_time: u64,
+
+        /// Filter out lines that do not containt highlighted text
+        #[clap(short, long)]
+        filter_non_highlighted: bool
     }
 }
 
@@ -49,9 +57,9 @@ pub(crate) fn handle_local_subcommand( cmd: LocalSubcommands, options: CliOption
     if !options.no_wait { thread::sleep( Duration::from_millis(3000) ) }
 
     match cmd {
-        LocalSubcommands::Scriptslog { colors } => {
+        LocalSubcommands::Scriptslog { colors, refresh_time, filter_non_highlighted } => {
             let highlights = scriptslog_colors_to_highlight_records(colors);
-            if let Some(err) = rw3d_core::scriptslog::tail_scriptslog(|s| scriptslog_printer(s, &highlights), 1000, logger_rcv) {
+            if let Some(err) = rw3d_core::scriptslog::tail_scriptslog(|text| scriptslog_printer(text, &highlights, filter_non_highlighted), refresh_time, logger_rcv) {
                 println!("{}", err);
             }
         }
@@ -132,8 +140,8 @@ fn scriptslog_colors_to_highlight_records(colors: ScriptslogColors) -> Vec<Scrip
 // The color chosen is not used anywhere else for that matter
 const NO_COLORING_PLACEHOLDER: Color = Color::BrightBlack;
 
-fn scriptslog_printer( t: &String, highlights: &Vec<ScriptslogHighlightRecord> ) {
-    let lines = t.split("\n");
+fn scriptslog_printer( text: &String, highlights: &Vec<ScriptslogHighlightRecord>, filter_non_highlighted: bool ) {
+    let lines = text.split("\n");
 
     for line in lines {
         let (mut fg, mut bg) = (NO_COLORING_PLACEHOLDER, NO_COLORING_PLACEHOLDER); 
@@ -148,7 +156,7 @@ fn scriptslog_printer( t: &String, highlights: &Vec<ScriptslogHighlightRecord> )
 
         if fg != NO_COLORING_PLACEHOLDER {
             println!("{}", line.color(fg).on_color(bg));
-        } else {
+        } else if !filter_non_highlighted {
             println!("{}", line);
         }
     }
