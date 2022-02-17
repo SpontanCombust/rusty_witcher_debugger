@@ -5,7 +5,7 @@ use crate::{packet_data::WitcherPacketData, constants};
 
 #[derive(Default, PartialEq, Eq)]
 pub struct WitcherPacket {
-    payload: Vec<WitcherPacketData>
+    pub(crate) payload: Vec<WitcherPacketData>
 }
 
 impl WitcherPacket {

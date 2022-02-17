@@ -1,6 +1,7 @@
 use std::{thread, net::{Shutdown, TcpStream}, sync::mpsc::{Receiver, TryRecvError}, time::Duration, io::Write};
 
 use clap::Subcommand;
+use rw3d_core::response_formatting::ResponseFormatter;
 
 use crate::{input_waiter::input_waiter, CliOptions};
 
@@ -74,23 +75,34 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
             if !options.no_wait { thread::sleep( Duration::from_millis(1000) ) }
             println!("Handling the command...");
 
+            let formatter: ResponseFormatter;
             let p = match cmd {
                 ServerSubcommands::Reload => {
+                    //TODO needs some summary and maybe colored text for errors
+                    // erros are not always displayed at the end and can be easily missed
+                    formatter = rw3d_core::response_formatting::scripts_reload_formatter;
                     rw3d_core::commands::scripts_reload()
                 }
                 ServerSubcommands::Exec { cmd } => {
+                    formatter = rw3d_core::response_formatting::scripts_execute_formatter;
                     rw3d_core::commands::scripts_execute(cmd)
                 }
                 ServerSubcommands::Rootpath => {
+                    formatter = rw3d_core::response_formatting::scripts_root_path_formatter;
                     rw3d_core::commands::scripts_root_path()
                 }
                 ServerSubcommands::Modlist => {
+                    //TODO would be nice to have these mod actually sorted alphabetically at least
+                    formatter = rw3d_core::response_formatting::mod_list_formatter;
                     rw3d_core::commands::mod_list()
                 }
                 ServerSubcommands::Opcode { func_name, class_name } => {
+                    formatter = rw3d_core::response_formatting::opcode_formatter;
                     rw3d_core::commands::opcode(func_name, class_name)
                 }
                 ServerSubcommands::Varlist { section, name } => {
+                    //TODO would be nice to have some option to sort those values
+                    formatter = rw3d_core::response_formatting::var_list_formatter;
                     rw3d_core::commands::var_list(section, name)
                 }
                 // ServerSubcommands::Varset { section, name, value } => {
@@ -119,7 +131,7 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
     
                 // This function can either finish by itself by the means of response timeout
                 // or be stopped by input waiter thread if that one sends him a signal
-                read_responses(&mut stream, options.response_timeout, reader_rcv, options.verbose);
+                read_responses(&mut stream, options.response_timeout, reader_rcv, options.verbose, formatter);
 
             } else {
                 // Wait a little bit to not finish the connection abruptly
@@ -159,7 +171,7 @@ fn try_connect(ip: String, max_tries: u8, tries_delay_ms: u64) -> Option<TcpStre
     None
 }
 
-fn read_responses(stream: &mut TcpStream, response_timeout: i64, cancel_token: Receiver<()>, verbose_print: bool ) {
+fn read_responses(stream: &mut TcpStream, response_timeout: i64, cancel_token: Receiver<()>, verbose_print: bool, formatter: ResponseFormatter) {
     let mut peek_buffer = [0u8;6];
     let mut packet_available: bool;
     let mut response_wait_elapsed: i64 = 0;
@@ -194,7 +206,7 @@ fn read_responses(stream: &mut TcpStream, response_timeout: i64, cancel_token: R
                     if verbose_print {
                         println!("{:?}", packet);
                     } else {
-                        println!("{}", packet);
+                        println!("{}", formatter(packet));
                     }
                 }
                 Err(e) => {
