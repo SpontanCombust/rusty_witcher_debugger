@@ -36,18 +36,19 @@ pub(crate) enum ServerSubcommands {
         #[clap(short)]
         name: Option<String>
     },
-    /// Sets a config variable
-    Varset {
-        /// Variable's section
-        #[clap(short)]
-        section: String,
-        /// Variable's name
-        #[clap(short)]
-        name: String,
-        /// Variable's new value
-        #[clap(short)]
-        value: String
-    },
+    //FIXME not working, probably incorrect packet format
+    // /// Sets a config variable
+    // Varset {
+    //     /// Variable's section
+    //     #[clap(short)]
+    //     section: String,
+    //     /// Variable's name
+    //     #[clap(short)]
+    //     name: String,
+    //     /// Variable's new value
+    //     #[clap(short)]
+    //     value: String
+    // },
 }
 
 
@@ -92,9 +93,9 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
                 ServerSubcommands::Varlist { section, name } => {
                     rw3d_core::commands::var_list(section, name)
                 }
-                ServerSubcommands::Varset { section, name, value } => {
-                    rw3d_core::commands::var_set(section, name, value)
-                }
+                // ServerSubcommands::Varset { section, name, value } => {
+                //     rw3d_core::commands::var_set(section, name, value)
+                // }
             };
 
             stream.write( p.to_bytes().as_slice() ).unwrap();
