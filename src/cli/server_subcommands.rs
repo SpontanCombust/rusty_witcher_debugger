@@ -145,6 +145,7 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
         }
         None => {
             println!("Failed to connect to the game on address {}", options.ip);
+            println!("Make sure the game is running and that it was launched with following flags: -net -debugscripts.");
         }
     }
 }

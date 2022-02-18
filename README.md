@@ -5,7 +5,7 @@
 A standalone Command Line Interface debugging tool for The Witcher 3 written in Rust.
 
 This tool is intented for Witcher 3 modders who make mainly script based mods.
-The main features of it include recompiling game scripts at run time and monitoring scripts log, which can greatly help during mod development.
+The main features of it include recompiling game scripts at run time, monitoring scripts log and remotely running exec functions in game, which can greatly help during mod development.
 
 Parts of this code are based off of `Wolvenkit modding tool` by Traderain, rfuzzo and others
 https://github.com/WolvenKit/WolvenKit
@@ -14,6 +14,8 @@ https://github.com/WolvenKit/WolvenKit
 
 
 ## Usage
+
+In order to use this tool make sure the game is running and that it was launched with following arguments: -net -debugscripts.
 
 Print help information.
 ```ps1
