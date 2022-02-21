@@ -1,7 +1,7 @@
 use std::{thread, net::{Shutdown, TcpStream}, sync::mpsc::{Receiver, TryRecvError}, time::Duration, io::Write};
 
 use clap::Subcommand;
-use rw3d_core::response_formatting::ResponseFormatter;
+use rw3d_core::utils::ResponseFormatter;
 
 use crate::{input_waiter::input_waiter, CliOptions};
 
@@ -80,29 +80,29 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
                 ServerSubcommands::Reload => {
                     //TODO needs some summary and maybe colored text for errors
                     // erros are not always displayed at the end and can be easily missed
-                    formatter = rw3d_core::response_formatting::scripts_reload_formatter;
+                    formatter = rw3d_core::utils::scripts_reload_formatter;
                     rw3d_core::commands::scripts_reload()
                 }
                 ServerSubcommands::Exec { cmd } => {
-                    formatter = rw3d_core::response_formatting::scripts_execute_formatter;
+                    formatter = rw3d_core::utils::scripts_execute_formatter;
                     rw3d_core::commands::scripts_execute(cmd)
                 }
                 ServerSubcommands::Rootpath => {
-                    formatter = rw3d_core::response_formatting::scripts_root_path_formatter;
+                    formatter = rw3d_core::utils::scripts_root_path_formatter;
                     rw3d_core::commands::scripts_root_path()
                 }
                 ServerSubcommands::Modlist => {
                     //TODO would be nice to have these mod actually sorted alphabetically at least
-                    formatter = rw3d_core::response_formatting::mod_list_formatter;
+                    formatter = rw3d_core::utils::mod_list_formatter;
                     rw3d_core::commands::mod_list()
                 }
                 ServerSubcommands::Opcode { func_name, class_name } => {
-                    formatter = rw3d_core::response_formatting::opcode_formatter;
+                    formatter = rw3d_core::utils::opcode_formatter;
                     rw3d_core::commands::opcode(func_name, class_name)
                 }
                 ServerSubcommands::Varlist { section, name } => {
                     //TODO would be nice to have some option to sort those values
-                    formatter = rw3d_core::response_formatting::var_list_formatter;
+                    formatter = rw3d_core::utils::var_list_formatter;
                     rw3d_core::commands::var_list(section, name)
                 }
                 // ServerSubcommands::Varset { section, name, value } => {
@@ -207,7 +207,7 @@ fn read_responses(stream: &mut TcpStream, response_timeout: i64, cancel_token: R
                     if verbose_print {
                         println!("{:?}", packet);
                     } else {
-                        println!("{}", formatter(packet));
+                        println!("{}", formatter(&packet));
                     }
                 }
                 Err(e) => {

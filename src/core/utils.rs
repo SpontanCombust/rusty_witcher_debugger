@@ -1,12 +1,12 @@
 use crate::{packet::WitcherPacket, packet_data::WitcherPacketData};
 
-pub type ResponseFormatter = fn(WitcherPacket) -> String;
+pub type ResponseFormatter = fn(&WitcherPacket) -> String;
 
-pub fn default_formatter(response: WitcherPacket) -> String {
+pub fn default_formatter(response: &WitcherPacket) -> String {
     format!("{}", response)
 }
 
-pub fn scripts_reload_formatter(response: WitcherPacket) -> String {
+pub fn scripts_reload_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() > 2 && response.payload[0] == WitcherPacketData::StringUTF8("ScriptCompiler".to_string()) {
         if response.payload[1] == WitcherPacketData::StringUTF8("started".to_string()) {
             return "Script compilation started...".to_string();
@@ -32,7 +32,7 @@ pub fn scripts_reload_formatter(response: WitcherPacket) -> String {
     default_formatter(response)
 }
 
-pub fn scripts_root_path_formatter(response: WitcherPacket) -> String {
+pub fn scripts_root_path_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() > 2 
     && response.payload[0] == WitcherPacketData::StringUTF8("ScriptCompiler".to_string()) 
     && response.payload[1] == WitcherPacketData::StringUTF8("RootPathConfirm".to_string()) {
@@ -42,7 +42,7 @@ pub fn scripts_root_path_formatter(response: WitcherPacket) -> String {
     default_formatter(response)
 }
 
-pub fn scripts_execute_formatter(response: WitcherPacket) -> String {
+pub fn scripts_execute_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() > 2 {
         return format!("{}", response.payload[2] );
     }
@@ -50,7 +50,7 @@ pub fn scripts_execute_formatter(response: WitcherPacket) -> String {
     default_formatter(response)
 }
 
-pub fn mod_list_formatter(response: WitcherPacket) -> String {
+pub fn mod_list_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() >= 3 
     && response.payload[0] == WitcherPacketData::StringUTF8("scripts".to_string()) 
     && response.payload[1] == WitcherPacketData::StringUTF8("pkgSyncListing".to_string()) {
@@ -72,7 +72,7 @@ pub fn mod_list_formatter(response: WitcherPacket) -> String {
     default_formatter(response)
 }
 
-pub fn opcode_formatter(response: WitcherPacket) -> String {
+pub fn opcode_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() == 9
     && response.payload[0] == WitcherPacketData::StringUTF8("ScriptDebugger".to_string()) 
     && response.payload[1] == WitcherPacketData::StringUTF8("OpcodeBreakdownResponse".to_string()) {
@@ -84,7 +84,7 @@ pub fn opcode_formatter(response: WitcherPacket) -> String {
     default_formatter(response)
 }
 
-pub fn var_list_formatter(response: WitcherPacket) -> String {
+pub fn var_list_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() > 4 
     && response.payload[1] == WitcherPacketData::StringUTF8("vars".to_string()) {
         let mut result = String::new();
