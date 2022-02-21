@@ -1,6 +1,7 @@
 mod server_subcommands;
 mod local_subcommands;
 mod input_waiter;
+mod response_handling;
 
 use local_subcommands::{LocalSubcommands, handle_local_subcommand};
 use server_subcommands::{ServerSubcommands, handle_server_subcommand};

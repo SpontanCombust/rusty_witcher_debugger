@@ -1,36 +1,93 @@
 use crate::{packet::WitcherPacket, packet_data::WitcherPacketData};
 
+
 pub type ResponseFormatter = fn(&WitcherPacket) -> String;
+
 
 pub fn default_formatter(response: &WitcherPacket) -> String {
     format!("{}", response)
 }
 
-pub fn scripts_reload_formatter(response: &WitcherPacket) -> String {
-    if response.payload.len() > 2 && response.payload[0] == WitcherPacketData::StringUTF8("ScriptCompiler".to_string()) {
-        if response.payload[1] == WitcherPacketData::StringUTF8("started".to_string()) {
-            return "Script compilation started...".to_string();
-        }
-        else if response.payload[1] == WitcherPacketData::StringUTF8("log".to_string()) {
-            return format!("{}", response.payload[2] );
-        }
-        else if response.payload[1] == WitcherPacketData::StringUTF8("warn".to_string()) {
-            return format!("[Warning] {}({}): {}", response.payload[3], response.payload[2], response.payload[4] );
-        }
-        else if response.payload[1] == WitcherPacketData::StringUTF8("error".to_string()) {
-            return format!("[Error] {}({}): {}", response.payload[3], response.payload[2], response.payload[4] );
-        }
-        else if response.payload[1] == WitcherPacketData::StringUTF8("finished".to_string()) {
-            if response.payload[2] == WitcherPacketData::Int8(0) {
-                return "Script compilation finished successfully.".to_string();
-            } else {
-                return "Script compilation finished with errors.".to_string();
-            }
-        }
+
+pub enum ScriptsReloadResponseType {
+    Started,
+    Log(String),
+    Warn {
+        file: String,
+        line: String,
+        msg: String
+    },
+    Error {
+        file: String,
+        line: String,
+        msg: String
+    },
+    Finished(bool)
+}
+
+pub fn scripts_reload_response_type(response: &WitcherPacket) -> Result<ScriptsReloadResponseType, String> {
+
+    fn file_line_msg(response: &WitcherPacket) -> (String, String, String) {
+        let file = format!("{}", response.payload[3] );
+        let line = format!("{}", response.payload[2] );
+        let msg = format!("{}", response.payload[4] );
+        
+        (file, line, msg)
     }
 
-    default_formatter(response)
+    if response.payload.len() > 2 && response.payload[0] == WitcherPacketData::StringUTF8("ScriptCompiler".to_string()) {
+        if response.payload[1] == WitcherPacketData::StringUTF8("started".to_string()) {
+            return Ok(ScriptsReloadResponseType::Started);
+        }
+        else if response.payload[1] == WitcherPacketData::StringUTF8("log".to_string()) {
+            return Ok(ScriptsReloadResponseType::Log( format!("{}", response.payload[2]) ));
+        }
+        else if response.payload[1] == WitcherPacketData::StringUTF8("warn".to_string()) {
+            let (file, line, msg) = file_line_msg(response);
+            return Ok(ScriptsReloadResponseType::Warn{ file, line, msg });
+        }
+        else if response.payload[1] == WitcherPacketData::StringUTF8("error".to_string()) {
+            let (file, line, msg) = file_line_msg(response);
+            return Ok(ScriptsReloadResponseType::Error{ file, line, msg });
+        }
+        else if response.payload[1] == WitcherPacketData::StringUTF8("finished".to_string()) {
+            return Ok(ScriptsReloadResponseType::Finished( response.payload[2] == WitcherPacketData::Int8(0) ));
+        }
+    } 
+    
+    Err("Invalid packet format".to_string())
 }
+
+
+pub fn scripts_reload_formatter(response: &WitcherPacket) -> String {
+    if let Ok(response_type) = scripts_reload_response_type(response) {
+        match response_type {
+            ScriptsReloadResponseType::Started => {
+                "Script compilation started...".to_string()
+            }
+            ScriptsReloadResponseType::Log(s) => {
+                s
+            }
+            ScriptsReloadResponseType::Warn { file, line, msg } => {
+                format!("[Warning] {}({}): {}", file, line, msg )
+            }
+            ScriptsReloadResponseType::Error { file, line, msg } => {
+                format!("[Error] {}({}): {}", file, line, msg )
+            }
+            ScriptsReloadResponseType::Finished(f) => {
+                if f {
+                    "Script compilation finished successfully.".to_string()
+                } else {
+                    "Script compilation finished with errors.".to_string()
+                }
+            }
+        }
+
+    } else {
+        default_formatter(response)
+    }
+}
+
 
 pub fn scripts_root_path_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() > 2 
@@ -42,6 +99,7 @@ pub fn scripts_root_path_formatter(response: &WitcherPacket) -> String {
     default_formatter(response)
 }
 
+
 pub fn scripts_execute_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() > 2 {
         return format!("{}", response.payload[2] );
@@ -49,6 +107,7 @@ pub fn scripts_execute_formatter(response: &WitcherPacket) -> String {
 
     default_formatter(response)
 }
+
 
 pub fn mod_list_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() >= 3 
@@ -72,6 +131,7 @@ pub fn mod_list_formatter(response: &WitcherPacket) -> String {
     default_formatter(response)
 }
 
+
 pub fn opcode_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() == 9
     && response.payload[0] == WitcherPacketData::StringUTF8("ScriptDebugger".to_string()) 
@@ -83,6 +143,7 @@ pub fn opcode_formatter(response: &WitcherPacket) -> String {
 
     default_formatter(response)
 }
+
 
 pub fn var_list_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() > 4 

@@ -1,9 +1,8 @@
 use std::{thread, net::{Shutdown, TcpStream}, sync::mpsc::{Receiver, TryRecvError}, time::Duration, io::Write};
 
 use clap::Subcommand;
-use rw3d_core::utils::ResponseFormatter;
 
-use crate::{input_waiter::input_waiter, CliOptions};
+use crate::{input_waiter::input_waiter, CliOptions, response_handling::{HandleResponse, ScriptsReloadHandler, ScriptsExecuteHandler, ScriptsRootpathHandler, ModlistHandler, OpcodeHandler, VarlistHandler}};
 
 /// Subcommands that require connection to game's socket and sending messages to it
 #[derive(Subcommand)]
@@ -75,34 +74,33 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
             if !options.no_wait { thread::sleep( Duration::from_millis(1000) ) }
             println!("Handling the command...");
 
-            let formatter: ResponseFormatter;
+            let handler: Box<dyn HandleResponse>;
             let p = match cmd {
                 ServerSubcommands::Reload => {
-                    //TODO needs some summary and maybe colored text for errors
-                    // erros are not always displayed at the end and can be easily missed
-                    formatter = rw3d_core::utils::scripts_reload_formatter;
+                    //TODO maybe colored text for errors
+                    handler = Box::new(ScriptsReloadHandler::default());
                     rw3d_core::commands::scripts_reload()
                 }
                 ServerSubcommands::Exec { cmd } => {
-                    formatter = rw3d_core::utils::scripts_execute_formatter;
+                    handler = Box::new(ScriptsExecuteHandler());
                     rw3d_core::commands::scripts_execute(cmd)
                 }
                 ServerSubcommands::Rootpath => {
-                    formatter = rw3d_core::utils::scripts_root_path_formatter;
+                    handler = Box::new(ScriptsRootpathHandler());
                     rw3d_core::commands::scripts_root_path()
                 }
                 ServerSubcommands::Modlist => {
                     //TODO would be nice to have these mod actually sorted alphabetically at least
-                    formatter = rw3d_core::utils::mod_list_formatter;
+                    handler = Box::new(ModlistHandler());
                     rw3d_core::commands::mod_list()
                 }
                 ServerSubcommands::Opcode { func_name, class_name } => {
-                    formatter = rw3d_core::utils::opcode_formatter;
+                    handler = Box::new(OpcodeHandler());
                     rw3d_core::commands::opcode(func_name, class_name)
                 }
                 ServerSubcommands::Varlist { section, name } => {
                     //TODO would be nice to have some option to sort those values
-                    formatter = rw3d_core::utils::var_list_formatter;
+                    handler = Box::new(VarlistHandler());
                     rw3d_core::commands::var_list(section, name)
                 }
                 // ServerSubcommands::Varset { section, name, value } => {
@@ -131,7 +129,7 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
     
                 // This function can either finish by itself by the means of response timeout
                 // or be stopped by input waiter thread if that one sends him a signal
-                read_responses(&mut stream, options.response_timeout, reader_rcv, options.verbose, formatter);
+                read_responses(&mut stream, options.response_timeout, reader_rcv, options.verbose, handler);
 
             } else {
                 // Wait a little bit to not finish the connection abruptly
@@ -172,7 +170,7 @@ fn try_connect(ip: String, max_tries: u8, tries_delay_ms: u64) -> Option<TcpStre
     None
 }
 
-fn read_responses(stream: &mut TcpStream, response_timeout: i64, cancel_token: Receiver<()>, verbose_print: bool, formatter: ResponseFormatter) {
+fn read_responses(stream: &mut TcpStream, response_timeout: i64, cancel_token: Receiver<()>, verbose_print: bool, mut handler: Box<dyn HandleResponse>) {
     let mut peek_buffer = [0u8;6];
     let mut packet_available: bool;
     let mut response_wait_elapsed: i64 = 0;
@@ -204,10 +202,10 @@ fn read_responses(stream: &mut TcpStream, response_timeout: i64, cancel_token: R
         if packet_available {
             match rw3d_core::packet::WitcherPacket::from_stream(stream) {
                 Ok(packet) => {
-                    if verbose_print {
-                        println!("{:?}", packet);
-                    } else {
-                        println!("{}", formatter(&packet));
+                    handler.handle(packet, verbose_print);
+
+                    if handler.should_exit() {
+                        break;
                     }
                 }
                 Err(e) => {
