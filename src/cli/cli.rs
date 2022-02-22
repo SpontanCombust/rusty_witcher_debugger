@@ -31,7 +31,7 @@ pub(crate) struct CliOptions {
     no_listen: bool,
 
     /// Enable verbose printing of packet contents.
-    #[clap(long)]
+    #[clap(long, short)]
     verbose: bool,
 
     /// Execute command immediately without doing short breaks between info messages beforehand.
