@@ -60,14 +60,12 @@ fn scriptslog_file() -> Result<File, String> {
     let mut docs = None;
     if let Some(ud) = UserDirs::new() {
         if let Some(path) = ud.document_dir() {
-            if let Some(s) = path.to_str() {
-                docs = Some(s.to_owned());
-            }
+            docs = Some(path.to_owned());
         }
     }
 
     if let Some(docs) = docs {
-        let scriptslog_path = Path::new(&docs).join(Path::new("The Witcher 3").join(constants::SCRIPTSLOG_FILE_NAME));
+        let scriptslog_path = docs.join(Path::new("The Witcher 3").join(constants::SCRIPTSLOG_FILE_NAME));
 
         let file = OpenOptions::new()
             .read(true)
