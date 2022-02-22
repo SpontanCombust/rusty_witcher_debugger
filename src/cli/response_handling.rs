@@ -1,40 +1,41 @@
+use colored::Colorize;
 use rw3d_core::packet::WitcherPacket;
 use rw3d_core::utils::{scripts_execute_formatter, scripts_root_path_formatter, mod_list_formatter, opcode_formatter, var_list_formatter, scripts_reload_formatter, scripts_reload_response_type, ScriptsReloadResponseType};
 
 
 
 pub(crate) trait HandleResponse {
-    fn handle(&mut self, response: WitcherPacket, verbose_print: bool);
-    fn should_exit(&self) -> bool;
+    fn handle_response(&mut self, response: WitcherPacket, verbose_print: bool);
+    fn is_done(&self) -> bool;
 }
 
 
 
-pub(crate) struct ScriptsReloadHandler {
+pub(crate) struct ScriptsReloadPrinter {
     has_finished: bool,
     warnings: Vec<String>,
     errors: Vec<String>
 }
 
-impl ScriptsReloadHandler {
+impl ScriptsReloadPrinter {
     fn print_summary(&self) {
-        println!("{} Errors, {} Warnings\n", self.errors.len(), self.warnings.len());
+        println!("========== {} Errors, {} Warnings ==========\n", self.errors.len(), self.warnings.len());
 
         for e in &self.errors {
-            println!("{}", e);
+            println!("{}", e.red());
         }
 
         println!(""); // empty line between errors and warnings
 
         for w in &self.warnings {
-            println!("{}", w);
+            println!("{}", w.yellow());
         }
     }
 }
 
-impl Default for ScriptsReloadHandler {
+impl Default for ScriptsReloadPrinter {
     fn default() -> Self {
-        ScriptsReloadHandler {
+        ScriptsReloadPrinter {
             has_finished: false,
             warnings: Vec::new(),
             errors: Vec::new(),
@@ -42,8 +43,8 @@ impl Default for ScriptsReloadHandler {
     }
 }
 
-impl HandleResponse for ScriptsReloadHandler {
-    fn handle(&mut self, response: WitcherPacket, verbose_print: bool) {
+impl HandleResponse for ScriptsReloadPrinter {
+    fn handle_response(&mut self, response: WitcherPacket, verbose_print: bool) {
         let msg = scripts_reload_formatter(&response);
 
         if let Ok(response_type) = scripts_reload_response_type(&response) {
@@ -75,17 +76,17 @@ impl HandleResponse for ScriptsReloadHandler {
         }
     }
 
-    fn should_exit(&self) -> bool {
+    fn is_done(&self) -> bool {
         self.has_finished
     }
 }
 
 
 
-pub(crate) struct ScriptsExecuteHandler();
+pub(crate) struct ScriptsExecutePrinter();
 
-impl HandleResponse for ScriptsExecuteHandler {
-    fn handle(&mut self, response: WitcherPacket, verbose_print: bool) {
+impl HandleResponse for ScriptsExecutePrinter {
+    fn handle_response(&mut self, response: WitcherPacket, verbose_print: bool) {
         if verbose_print {
             println!("{:?}", response);
         } else {
@@ -93,17 +94,17 @@ impl HandleResponse for ScriptsExecuteHandler {
         }
     }
 
-    fn should_exit(&self) -> bool {
+    fn is_done(&self) -> bool {
         true // only one packet
     }
 }
 
 
 
-pub(crate) struct ScriptsRootpathHandler();
+pub(crate) struct ScriptsRootpathPrinter();
 
-impl HandleResponse for ScriptsRootpathHandler {
-    fn handle(&mut self, response: WitcherPacket, verbose_print: bool) {
+impl HandleResponse for ScriptsRootpathPrinter {
+    fn handle_response(&mut self, response: WitcherPacket, verbose_print: bool) {
         if verbose_print {
             println!("{:?}", response);
         } else {
@@ -111,17 +112,17 @@ impl HandleResponse for ScriptsRootpathHandler {
         }
     }
 
-    fn should_exit(&self) -> bool {
+    fn is_done(&self) -> bool {
         true // only one packet
     }
 }
 
 
 
-pub(crate) struct ModlistHandler();
+pub(crate) struct ModlistPrinter();
 
-impl HandleResponse for ModlistHandler {
-    fn handle(&mut self, response: WitcherPacket, verbose_print: bool) {
+impl HandleResponse for ModlistPrinter {
+    fn handle_response(&mut self, response: WitcherPacket, verbose_print: bool) {
         if verbose_print {
             println!("{:?}", response);
         } else {
@@ -129,17 +130,17 @@ impl HandleResponse for ModlistHandler {
         }
     }
 
-    fn should_exit(&self) -> bool {
+    fn is_done(&self) -> bool {
         true // only one packet
     }
 }
 
 
 
-pub(crate) struct OpcodeHandler();
+pub(crate) struct OpcodePrinter();
 
-impl HandleResponse for OpcodeHandler {
-    fn handle(&mut self, response: WitcherPacket, verbose_print: bool) {
+impl HandleResponse for OpcodePrinter {
+    fn handle_response(&mut self, response: WitcherPacket, verbose_print: bool) {
         if verbose_print {
             println!("{:?}", response);
         } else {
@@ -147,17 +148,17 @@ impl HandleResponse for OpcodeHandler {
         }
     }
 
-    fn should_exit(&self) -> bool {
+    fn is_done(&self) -> bool {
         true // only one packet
     }
 }
 
 
 
-pub(crate) struct VarlistHandler();
+pub(crate) struct VarlistPrinter();
 
-impl HandleResponse for VarlistHandler {
-    fn handle(&mut self, response: WitcherPacket, verbose_print: bool) {
+impl HandleResponse for VarlistPrinter {
+    fn handle_response(&mut self, response: WitcherPacket, verbose_print: bool) {
         if verbose_print {
             println!("{:?}", response);
         } else {
@@ -165,7 +166,7 @@ impl HandleResponse for VarlistHandler {
         }
     }
 
-    fn should_exit(&self) -> bool {
+    fn is_done(&self) -> bool {
         true // only one packet
     }
 }

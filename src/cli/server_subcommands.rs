@@ -2,7 +2,7 @@ use std::{thread, net::{Shutdown, TcpStream}, sync::mpsc::{Receiver, TryRecvErro
 
 use clap::Subcommand;
 
-use crate::{input_waiter::input_waiter, CliOptions, response_handling::{HandleResponse, ScriptsReloadHandler, ScriptsExecuteHandler, ScriptsRootpathHandler, ModlistHandler, OpcodeHandler, VarlistHandler}};
+use crate::{input_waiter::input_waiter, CliOptions, response_handling::{HandleResponse, ScriptsReloadPrinter, ScriptsExecutePrinter, ScriptsRootpathPrinter, ModlistPrinter, OpcodePrinter, VarlistPrinter}};
 
 /// Subcommands that require connection to game's socket and sending messages to it
 #[derive(Subcommand)]
@@ -74,33 +74,32 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
             if !options.no_wait { thread::sleep( Duration::from_millis(1000) ) }
             println!("Handling the command...");
 
-            let handler: Box<dyn HandleResponse>;
+            let response_handler: Box<dyn HandleResponse>;
             let p = match cmd {
                 ServerSubcommands::Reload => {
-                    //TODO maybe colored text for errors
-                    handler = Box::new(ScriptsReloadHandler::default());
+                    response_handler = Box::new(ScriptsReloadPrinter::default());
                     rw3d_core::commands::scripts_reload()
                 }
                 ServerSubcommands::Exec { cmd } => {
-                    handler = Box::new(ScriptsExecuteHandler());
+                    response_handler = Box::new(ScriptsExecutePrinter());
                     rw3d_core::commands::scripts_execute(cmd)
                 }
                 ServerSubcommands::Rootpath => {
-                    handler = Box::new(ScriptsRootpathHandler());
+                    response_handler = Box::new(ScriptsRootpathPrinter());
                     rw3d_core::commands::scripts_root_path()
                 }
                 ServerSubcommands::Modlist => {
                     //TODO would be nice to have these mod actually sorted alphabetically at least
-                    handler = Box::new(ModlistHandler());
+                    response_handler = Box::new(ModlistPrinter());
                     rw3d_core::commands::mod_list()
                 }
                 ServerSubcommands::Opcode { func_name, class_name } => {
-                    handler = Box::new(OpcodeHandler());
+                    response_handler = Box::new(OpcodePrinter());
                     rw3d_core::commands::opcode(func_name, class_name)
                 }
                 ServerSubcommands::Varlist { section, name } => {
                     //TODO would be nice to have some option to sort those values
-                    handler = Box::new(VarlistHandler());
+                    response_handler = Box::new(VarlistPrinter());
                     rw3d_core::commands::var_list(section, name)
                 }
                 // ServerSubcommands::Varset { section, name, value } => {
@@ -129,7 +128,7 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
     
                 // This function can either finish by itself by the means of response timeout
                 // or be stopped by input waiter thread if that one sends him a signal
-                read_responses(&mut stream, options.response_timeout, reader_rcv, options.verbose, handler);
+                read_responses(&mut stream, options.response_timeout, reader_rcv, options.verbose, response_handler);
 
             } else {
                 // Wait a little bit to not finish the connection abruptly
@@ -202,9 +201,9 @@ fn read_responses(stream: &mut TcpStream, response_timeout: i64, cancel_token: R
         if packet_available {
             match rw3d_core::packet::WitcherPacket::from_stream(stream) {
                 Ok(packet) => {
-                    handler.handle(packet, verbose_print);
+                    handler.handle_response(packet, verbose_print);
 
-                    if handler.should_exit() {
+                    if handler.is_done() {
                         break;
                     }
                 }
