@@ -59,8 +59,16 @@ where P: Fn(&String) -> () {
 fn scriptslog_file() -> Result<File, String> {
     let mut docs = None;
     if let Some(ud) = UserDirs::new() {
-        if let Some(path) = ud.document_dir() {
-            docs = Some(path.to_owned());
+        if cfg!(windows) {
+            if let Some(path) = ud.document_dir() {
+                docs = Some(path.to_owned());
+            }
+        } else if cfg!(unix) {
+            if let Some(path) = Some(ud.home_dir()) {
+                docs = Some(path.join(constants::LINUX_STEAM_PFX_PATH).to_owned());
+            }
+        } else {
+            unimplemented!();
         }
     }
 

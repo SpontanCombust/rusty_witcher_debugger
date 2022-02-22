@@ -39,3 +39,4 @@ pub const TYPE_STRING_UTF16: [u8; 2] = [0x9C, 0x16];
 
 
 pub const SCRIPTSLOG_FILE_NAME: &str = "scriptslog.txt";
+pub const LINUX_STEAM_PFX_PATH: &str = ".local/share/Steam/steamapps/compatdata/292030/pfx/drive_c/users/steamuser/Documents"; // it's ok to use forward slashes because this is Linux-specific
