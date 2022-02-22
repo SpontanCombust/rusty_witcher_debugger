@@ -38,4 +38,4 @@ pub const TYPE_STRING_UTF8: [u8; 2] = [0xAC, 0x08];
 pub const TYPE_STRING_UTF16: [u8; 2] = [0x9C, 0x16];
 
 
-pub const SCRIPTSLOG_PATH_IN_DOCS: &str = "The Witcher 3\\scriptslog.txt";
+pub const SCRIPTSLOG_FILE_NAME: &str = "scriptslog.txt";

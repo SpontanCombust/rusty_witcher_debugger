@@ -1,4 +1,4 @@
-use std::{fs::{File, OpenOptions}, sync::mpsc::{Receiver, TryRecvError}, io::{BufReader, Seek, SeekFrom, Read}, time::Duration};
+use std::{fs::{File, OpenOptions}, sync::mpsc::{Receiver, TryRecvError}, io::{BufReader, Seek, SeekFrom, Read}, time::Duration, path::Path};
 use directories::UserDirs;
 
 use crate::constants;
@@ -67,11 +67,13 @@ fn scriptslog_file() -> Result<File, String> {
     }
 
     if let Some(docs) = docs {
+        let scriptslog_path = Path::new(&docs).join(Path::new("The Witcher 3").join(constants::SCRIPTSLOG_FILE_NAME));
+
         let file = OpenOptions::new()
             .read(true)
             .write(true) // so that it can be created if doesn't exist
             .create(true)
-            .open( docs + "\\" + constants::SCRIPTSLOG_PATH_IN_DOCS );
+            .open( scriptslog_path );
 
         if let Err(e) = file {
             println!("{:?}", e.kind());
