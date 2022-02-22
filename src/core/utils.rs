@@ -28,9 +28,9 @@ pub enum ScriptsReloadResponseType {
 pub fn scripts_reload_response_type(response: &WitcherPacket) -> Result<ScriptsReloadResponseType, String> {
 
     fn file_line_msg(response: &WitcherPacket) -> (String, String, String) {
-        let file = format!("{}", response.payload[3] );
-        let line = format!("{}", response.payload[2] );
-        let msg = format!("{}", response.payload[4] );
+        let file = response.payload[3].to_string();
+        let line = response.payload[2].to_string();
+        let msg = response.payload[4].to_string();
         
         (file, line, msg)
     }
@@ -40,7 +40,7 @@ pub fn scripts_reload_response_type(response: &WitcherPacket) -> Result<ScriptsR
             return Ok(ScriptsReloadResponseType::Started);
         }
         else if response.payload[1] == WitcherPacketData::StringUTF8("log".to_string()) {
-            return Ok(ScriptsReloadResponseType::Log( format!("{}", response.payload[2]) ));
+            return Ok(ScriptsReloadResponseType::Log( response.payload[2].to_string() ));
         }
         else if response.payload[1] == WitcherPacketData::StringUTF8("warn".to_string()) {
             let (file, line, msg) = file_line_msg(response);
@@ -93,7 +93,7 @@ pub fn scripts_root_path_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() > 2 
     && response.payload[0] == WitcherPacketData::StringUTF8("ScriptCompiler".to_string()) 
     && response.payload[1] == WitcherPacketData::StringUTF8("RootPathConfirm".to_string()) {
-        return format!("{}", response.payload[2] );
+        return response.payload[2].to_string();
     }
 
     default_formatter(response)
@@ -102,7 +102,7 @@ pub fn scripts_root_path_formatter(response: &WitcherPacket) -> String {
 
 pub fn scripts_execute_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() > 2 {
-        return format!("{}", response.payload[2] );
+        return response.payload[2].to_string();
     }
 
     default_formatter(response)
@@ -119,11 +119,16 @@ pub fn mod_list_formatter(response: &WitcherPacket) -> String {
             result += &format!("Mods installed: {}\n", installed);
         }
 
+        let mut mods = Vec::new();
         if response.payload.len() > 3 {
             for i in (3 .. response.payload.len()).step_by(2) {
-                result += &format!("{}\n", response.payload[i]);
+                let mod_name = response.payload[i].to_string();
+                mods.push(mod_name);
             }
         }
+
+        mods.sort();
+        mods.iter().for_each(|m| result += &format!("{}\n", m));
 
         return result;
     }
@@ -145,6 +150,12 @@ pub fn opcode_formatter(response: &WitcherPacket) -> String {
 }
 
 
+struct VarlistEntry {
+    pub section: String,
+    pub variable: String,
+    pub value: String
+}
+
 pub fn var_list_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() > 4 
     && response.payload[1] == WitcherPacketData::StringUTF8("vars".to_string()) {
@@ -155,9 +166,23 @@ pub fn var_list_formatter(response: &WitcherPacket) -> String {
         result += &format!("{:40}| {:45}| {}\n", "Section", "Variable", "Value");
         result += &tab_line;
         
+        let mut entries = Vec::new();
         for i in (4 .. response.payload.len()).step_by(5) {
-            result += &format!("{:40}| {:45}| {}\n", response.payload[i+1], response.payload[i], response.payload[i+2]);
+            entries.push( VarlistEntry{
+                section: response.payload[i+1].to_string(),
+                variable: response.payload[i].to_string(),
+                value: response.payload[i+2].to_string()
+            });
         }
+
+        entries.sort_by(|e1, e2| {
+            match e1.section.cmp(&e2.section) {
+                std::cmp::Ordering::Equal => e1.variable.cmp(&e2.variable),
+                other => other
+            }
+        });
+
+        entries.iter().for_each(|e| result += &format!("{:40}| {:45}| {}\n", e.section, e.variable, e.value) );
 
         return result;
     }

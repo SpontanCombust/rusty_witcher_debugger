@@ -89,7 +89,6 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
                     rw3d_core::commands::scripts_root_path()
                 }
                 ServerSubcommands::Modlist => {
-                    //TODO would be nice to have these mod actually sorted alphabetically at least
                     response_handler = Box::new(ModlistPrinter());
                     rw3d_core::commands::mod_list()
                 }
@@ -98,7 +97,6 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
                     rw3d_core::commands::opcode(func_name, class_name)
                 }
                 ServerSubcommands::Varlist { section, name } => {
-                    //TODO would be nice to have some option to sort those values
                     response_handler = Box::new(VarlistPrinter());
                     rw3d_core::commands::var_list(section, name)
                 }
