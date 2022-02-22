@@ -35,13 +35,15 @@ impl ScriptsReloadPrinter {
     }
 
     fn print_summary(&self) {
-        println!("========== {} Errors, {} Warnings ==========\n", self.errors.len(), self.warnings.len());
+        println!("========== {} Errors, {} Warnings ==========", self.errors.len(), self.warnings.len());
 
         for e in &self.errors {
             println!("{}", e.red());
         }
 
-        println!(""); // empty line between errors and warnings
+        if self.errors.len() > 0 {
+            println!(); // empty line between errors and warnings
+        }
 
         for w in &self.warnings {
             println!("{}", w.yellow());
@@ -80,6 +82,7 @@ impl HandleResponse for ScriptsReloadPrinter {
         }
 
         if self.has_finished && ( !self.warnings.is_empty() || !self.errors.is_empty() ) {
+            println!();
             self.print_summary();
         }
     }

@@ -14,7 +14,6 @@ https://github.com/WolvenKit/WolvenKit
 ## Usage
 
 In order to use this tool make sure the game is running and that it was launched with following arguments: -net -debugscripts.
-By default for a program to exit after handling a command you need to press Enter. This however can be configured with appropriate flags.
 
 Print help information.
 ```ps1

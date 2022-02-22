@@ -11,6 +11,7 @@ pub(crate) enum ServerSubcommands {
     Rootpath,
     /// Reload game scripts
     Reload {
+        // Max waiting time for function compilation in millis
         #[clap(long, short='c', default_value_t=7000)]
         max_compile_time: u64
     },
@@ -110,8 +111,8 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
         connection.write( p.to_bytes().as_slice() ).unwrap();
 
         if !options.no_listen {
-            println!("Game response:\n");
-            if !options.no_wait { thread::sleep( Duration::from_millis(2000) ) }
+            println!("\nGame response:\n");
+            if !options.no_wait { thread::sleep( Duration::from_millis(1000) ) }
 
             // This function can either finish by itself by the means of response timeout
             // or be stopped by input waiter thread if that one sends him a signal
