@@ -6,18 +6,34 @@ use rw3d_core::utils::{scripts_execute_formatter, scripts_root_path_formatter, m
 
 pub(crate) trait HandleResponse {
     fn handle_response(&mut self, response: WitcherPacket, verbose_print: bool);
+    /// Whether the handler has finished the work
     fn is_done(&self) -> bool;
+    /// Max time for the next response to come in millis
+    /// Used to indicate when the game needs to do some work before sending the response
+    fn response_await_time(&self) -> u64;
 }
 
 
 
 pub(crate) struct ScriptsReloadPrinter {
-    has_finished: bool,
+    max_compile_time: u64,
     warnings: Vec<String>,
-    errors: Vec<String>
+    errors: Vec<String>,
+    is_compiling: bool,
+    has_finished: bool
 }
 
 impl ScriptsReloadPrinter {
+    pub fn new(max_compile_time: u64) -> Self {
+        ScriptsReloadPrinter {
+            max_compile_time,
+            warnings: Vec::new(),
+            errors: Vec::new(),
+            is_compiling: false,
+            has_finished: false,
+        }
+    }
+
     fn print_summary(&self) {
         println!("========== {} Errors, {} Warnings ==========\n", self.errors.len(), self.warnings.len());
 
@@ -29,16 +45,6 @@ impl ScriptsReloadPrinter {
 
         for w in &self.warnings {
             println!("{}", w.yellow());
-        }
-    }
-}
-
-impl Default for ScriptsReloadPrinter {
-    fn default() -> Self {
-        ScriptsReloadPrinter {
-            has_finished: false,
-            warnings: Vec::new(),
-            errors: Vec::new(),
         }
     }
 }
@@ -61,7 +67,9 @@ impl HandleResponse for ScriptsReloadPrinter {
                 ScriptsReloadResponseType::Finished(_) => {
                     self.has_finished = true;
                 }
-                _ => {}
+                ScriptsReloadResponseType::Log(s) => {
+                    self.is_compiling = s.contains("Compiling functions");
+                }
             }
         }
 
@@ -78,6 +86,14 @@ impl HandleResponse for ScriptsReloadPrinter {
 
     fn is_done(&self) -> bool {
         self.has_finished
+    }
+
+    fn response_await_time(&self) -> u64 {
+        if self.is_compiling {
+            self.max_compile_time
+        } else {
+            500
+        }
     }
 }
 
@@ -97,6 +113,10 @@ impl HandleResponse for ScriptsExecutePrinter {
     fn is_done(&self) -> bool {
         true // only one packet
     }
+
+    fn response_await_time(&self) -> u64 {
+        500
+    }
 }
 
 
@@ -114,6 +134,10 @@ impl HandleResponse for ScriptsRootpathPrinter {
 
     fn is_done(&self) -> bool {
         true // only one packet
+    }
+
+    fn response_await_time(&self) -> u64 {
+        500
     }
 }
 
@@ -133,6 +157,10 @@ impl HandleResponse for ModlistPrinter {
     fn is_done(&self) -> bool {
         true // only one packet
     }
+
+    fn response_await_time(&self) -> u64 {
+        500
+    }
 }
 
 
@@ -151,6 +179,10 @@ impl HandleResponse for OpcodePrinter {
     fn is_done(&self) -> bool {
         true // only one packet
     }
+
+    fn response_await_time(&self) -> u64 {
+        500
+    }
 }
 
 
@@ -168,5 +200,9 @@ impl HandleResponse for VarlistPrinter {
 
     fn is_done(&self) -> bool {
         true // only one packet
+    }
+
+    fn response_await_time(&self) -> u64 {
+        500
     }
 }

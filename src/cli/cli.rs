@@ -38,12 +38,11 @@ pub(crate) struct CliOptions {
     #[clap(long)]
     no_wait: bool,
 
-    /// The maximum amount of milliseconds that program should wait for any game messages until it will automatically exit.
-    /// This setting is ignored if --no-listen is set.
-    /// If set to a negative number will wait indefinitely for user's input.
-    /// Doesn't apply to scriptslog command.
-    #[clap(long, short, default_value_t=-1)]
-    response_timeout: i64,
+    /// The maximum amount of milliseconds that program should wait for game response until it will automatically exit.
+    /// This will be extended by any command that may specify that the game would need additional time for computation.
+    /// This setting is ignored if --no-listen is set and doesn't apply to scriptslog command.
+    #[clap(long, short, default_value_t=5000)]
+    response_timeout: u64,
 }
 
 #[derive(Subcommand)]

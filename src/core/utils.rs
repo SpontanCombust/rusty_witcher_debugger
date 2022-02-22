@@ -80,7 +80,7 @@ pub fn scripts_reload_formatter(response: &WitcherPacket) -> String {
                 } else {
                     "Script compilation finished with errors.".to_string()
                 }
-            }
+            } 
         }
 
     } else {
