@@ -30,6 +30,4 @@ jobs:
         command: build
         args: --release --target=x86_64-pc-windows-gnu
     - name: Run tests
-      run: echo "Tests are not yet set up, assume everything works because why not."
-      # Add once testing is configured
-      # run: cargo test --verbose
+      run: cargo test --verbose
