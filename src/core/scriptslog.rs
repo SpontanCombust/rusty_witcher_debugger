@@ -1,4 +1,4 @@
-use std::{fs::{File, OpenOptions}, sync::mpsc::{Receiver, TryRecvError}, io::{BufReader, Seek, SeekFrom, Read}, time::Duration, path::Path};
+use std::{fs::{File, OpenOptions}, sync::mpsc::{Receiver, TryRecvError}, io::{BufReader, Seek, SeekFrom, Read}, time::Duration, path::{Path, PathBuf}};
 use directories::UserDirs;
 
 use crate::constants;
@@ -8,9 +8,9 @@ use crate::constants;
 /// In case of error will return Some with that error message, otherwise will return None.
 /// For `printer` parameter you can pass any function or closure that you want to print log text with,
 /// the string passed to said printer will consist of one or more lines of text.
-pub fn tail_scriptslog<P>( printer: P, refresh_time_millis: u64, cancel_token: Receiver<()> ) -> Option<String> 
+pub fn tail_scriptslog<P>( printer: P, refresh_time_millis: u64, cancel_token: Receiver<()>, custom_path: Option<String> ) -> Option<String> 
 where P: Fn(&String) -> () {
-    match scriptslog_file() {
+    match scriptslog_file(custom_path) {
         Ok(file) => {
             let mut reader = BufReader::new(&file);
             // start from the end of the file
@@ -56,38 +56,47 @@ where P: Fn(&String) -> () {
     } 
 }
 
-fn scriptslog_file() -> Result<File, String> {
-    let mut docs = None;
-    if let Some(ud) = UserDirs::new() {
+fn scriptslog_file(custon_path: Option<String>) -> Result<File, String> {
+    let scriptslog_path: PathBuf;
+
+    if let Some(custom_path) = custon_path {
+        scriptslog_path = Path::new(&custom_path).to_owned();
+    } else if let Some(ud) = UserDirs::new() {
+        let mut docs = None;
         if cfg!(windows) {
             if let Some(path) = ud.document_dir() {
                 docs = Some(path.to_owned());
             }
-        } else if cfg!(unix) {
+        } 
+        else if cfg!(unix) {
             if let Some(path) = Some(ud.home_dir()) {
                 docs = Some(path.join(constants::LINUX_STEAM_PFX_PATH).to_owned());
             }
-        } else {
+        } 
+        else {
             unimplemented!();
         }
+
+        if let Some(docs) = docs {
+            scriptslog_path = docs.join(Path::new("The Witcher 3").join(constants::SCRIPTSLOG_FILE_NAME));
+        } else {
+            return Err( "Documents directory could not be found.".to_owned() );
+        }
+
+    } else {
+        return Err("Scriptslog path could not be resolved".to_owned());
     }
 
-    if let Some(docs) = docs {
-        let scriptslog_path = docs.join(Path::new("The Witcher 3").join(constants::SCRIPTSLOG_FILE_NAME));
+    let file = OpenOptions::new()
+        .read(true)
+        .write(true) // so that it can be created if doesn't exist
+        .create(true)
+        .open(scriptslog_path);
 
-        let file = OpenOptions::new()
-            .read(true)
-            .write(true) // so that it can be created if doesn't exist
-            .create(true)
-            .open( scriptslog_path );
-
-        if let Err(e) = file {
-            println!("{:?}", e.kind());
-            return Err("File open error: ".to_owned() + &e.to_string());
-        } else {
-            return Ok(file.unwrap());
-        }
+    if let Err(e) = file {
+        println!("{:?}", e.kind());
+        return Err("File open error: ".to_owned() + &e.to_string());
     } else {
-        Err( "Documents directory could not be found.".to_owned() )
+        return Ok(file.unwrap());
     }
 }
