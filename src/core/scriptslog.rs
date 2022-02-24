@@ -94,6 +94,8 @@ where P: Fn(&String) -> () {
                     Ok(size) => {
                         if size > 0 {
                             last_pos += size as u64;
+
+                            let text = text.trim().to_string();
                             printer(&text);
                         }
                     }
@@ -150,6 +152,8 @@ where P: Fn(&String) -> () {
                     Ok(size) => {
                         if size > 0 {
                             last_pos += size as u64;
+
+                            let text = text.trim().to_string();
                             printer(&text);
                         }
                     }
