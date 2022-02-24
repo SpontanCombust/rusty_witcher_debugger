@@ -21,7 +21,11 @@ pub(crate) enum LocalSubcommands {
 
         /// Filter out lines that do not containt highlighted text
         #[clap(short, long)]
-        filter_non_highlighted: bool
+        filter_non_highlighted: bool,
+
+        /// Specify a custom, full path to the scriptslog file
+        #[clap(short='p', long)]
+        custom_path: Option<String>
     }
 }
 
@@ -57,9 +61,9 @@ pub(crate) fn handle_local_subcommand( cmd: LocalSubcommands, options: CliOption
     if !options.no_wait { thread::sleep( Duration::from_millis(3000) ) }
 
     match cmd {
-        LocalSubcommands::Scriptslog { colors, refresh_time, filter_non_highlighted } => {
+        LocalSubcommands::Scriptslog { colors, refresh_time, filter_non_highlighted, custom_path } => {
             let highlights = scriptslog_colors_to_highlight_records(colors);
-            if let Some(err) = rw3d_core::scriptslog::tail_scriptslog(|text| scriptslog_printer(text, &highlights, filter_non_highlighted), refresh_time, logger_rcv) {
+            if let Some(err) = rw3d_core::scriptslog::tail_scriptslog(|text| scriptslog_printer(text, &highlights, filter_non_highlighted), refresh_time, logger_rcv, custom_path) {
                 println!("{}", err);
             }
         }
