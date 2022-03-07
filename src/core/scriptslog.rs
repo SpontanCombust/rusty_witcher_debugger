@@ -1,4 +1,4 @@
-use std::{fs::{File, OpenOptions}, sync::mpsc::{Receiver, TryRecvError}, io::{BufReader, Seek, SeekFrom, Read}, time::Duration, path::{Path, PathBuf}};
+use std::{fs::{File, OpenOptions}, sync::mpsc::{Receiver, TryRecvError}, io::{BufReader, Seek, SeekFrom, Read, self}, time::Duration, path::{Path, PathBuf}};
 use directories::UserDirs;
 
 use crate::constants;
@@ -10,18 +10,25 @@ use crate::constants;
 /// the string passed to said printer will consist of one or more lines of text.
 pub fn tail_scriptslog<P>( printer: P, refresh_time_millis: u64, cancel_token: Receiver<()>, custom_path: Option<String> ) -> Option<String> 
 where P: Fn(&String) -> () {
+    let file_path: PathBuf;
     if let Some(p) = custom_path {
-        tail_scriptslog_loop(Path::new(&p).to_path_buf(), printer, refresh_time_millis, cancel_token)
+        file_path = Path::new(&p).to_path_buf();
     } else {
         match scriptslog_file_path() {
             Ok(p) => {
-                tail_scriptslog_loop(p, printer, refresh_time_millis, cancel_token)
+                file_path = p;
             }
             Err(e) => {
-                Some(e)
+                return Some(e);
             }
         }
     }
+
+    if !file_path.exists() {
+        println!("Log file at location {} does not yet exist. Trying to create a new one...", file_path.to_string_lossy());
+    }
+    
+    tail_scriptslog_loop(file_path, printer, refresh_time_millis, cancel_token)
 }
 
 fn scriptslog_file_path() -> Result<PathBuf, String> {
@@ -57,10 +64,13 @@ fn open_scriptslog(path: &PathBuf) -> Result<File, String> {
         .open(path);
 
     if let Err(e) = file {
-        println!("{:?}", e.kind());
-        return Err("File open error: ".to_owned() + &e.to_string());
+        if e.kind() == io::ErrorKind::NotFound {
+            Err("File open error: At least one of the directory components of the file path does not exist.".to_owned())
+        } else {
+            Err("File open error: ".to_owned() + &e.to_string())
+        }
     } else {
-        return Ok(file.unwrap());
+        Ok(file.unwrap())
     }
 }
 
@@ -72,6 +82,7 @@ where P: Fn(&String) -> () {
             let mut reader = BufReader::new(&file);
             // start from the end of the file
             let mut last_pos = reader.seek( SeekFrom::End(0) ).unwrap();
+            let mut buffer = Vec::new();
             let mut text = String::new();
 
             loop {
@@ -89,13 +100,14 @@ where P: Fn(&String) -> () {
                     last_pos = reader.seek( SeekFrom::Start(0) ).unwrap();
                 }
 
+                buffer.clear();
                 text.clear();
-                match reader.read_to_string(&mut text) {
+                match reader.read_to_end(&mut buffer) {
                     Ok(size) => {
                         if size > 0 {
+                            text = String::from_utf8_lossy(&buffer).trim().to_string();
+                            
                             last_pos += size as u64;
-
-                            let text = text.trim().to_string();
                             printer(&text);
                         }
                     }
@@ -126,6 +138,7 @@ where P: Fn(&String) -> () {
         }
     }
     
+    let mut buffer = Vec::<u8>::new();
     let mut text = String::new();
     loop {
         match cancel_token.try_recv() {
@@ -147,13 +160,14 @@ where P: Fn(&String) -> () {
                     reader.seek(SeekFrom::Start(last_pos)).unwrap();
                 }
 
+                buffer.clear();
                 text.clear();
-                match reader.read_to_string(&mut text) {
+                match reader.read_to_end(&mut buffer) {
                     Ok(size) => {
                         if size > 0 {
+                            text = String::from_utf8_lossy(&buffer).trim().to_string();
+                            
                             last_pos += size as u64;
-
-                            let text = text.trim().to_string();
                             printer(&text);
                         }
                     }
