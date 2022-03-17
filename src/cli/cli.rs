@@ -9,7 +9,7 @@ use clap::{Parser, Subcommand};
 
 
 #[derive(Parser)]
-#[clap(name="Rusty Witcher 3 Debugger", version="v0.5")]
+#[clap(name="Rusty Witcher 3 Debugger", version="v0.5.1")]
 #[clap(about="A standalone debugging tool for The Witcher 3 written in Rust", long_about=None)]
 struct Cli {
     #[clap(flatten)]
