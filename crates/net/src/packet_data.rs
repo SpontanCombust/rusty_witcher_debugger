@@ -11,7 +11,9 @@ pub(crate) enum WitcherPacketData {
     UInt32(u32),
     Int64(i64),
     StringUTF8(String),
-    StringUTF16(String)
+    StringUTF16(String),
+    /// for cases where the data tag was not recognized
+    Unknown([u8; 2])
 }
 
 impl WitcherPacketData {
@@ -24,6 +26,7 @@ impl WitcherPacketData {
             WitcherPacketData::Int64(_) => 10, // 10 = data_type(2) + data(8)
             WitcherPacketData::StringUTF8(s) => 6 + s.len(), // 6 = data_type(2) + string_size_type(2) + string_size(2)
             WitcherPacketData::StringUTF16(s) => 6 + s.len() * 2, // 6 = data_type(2) + string_size_type(2) + string_size(2)
+            WitcherPacketData::Unknown(_) => 2
         }
     }
 
@@ -72,13 +75,16 @@ impl WitcherPacketData {
                 bytes.extend(&constants::TYPE_INT16);
                 bytes.extend(len_bytes);
                 bytes.extend(encoded.as_slice());
+            },
+            WitcherPacketData::Unknown(data) => {
+                bytes.extend(data)
             }
         }
 
         bytes
     }
 
-    pub fn from_bytes( payload: &[u8] ) -> Result<Vec<WitcherPacketData>, String> {
+    pub fn from_bytes(payload: &[u8]) -> Result<Vec<WitcherPacketData>, String> {
         // size of the payload is always kept on 2 bytes in the packet
         let err = String::from("Failed to parse payload - ");
         let mut offset: usize = 0;
@@ -179,11 +185,9 @@ impl WitcherPacketData {
                         }
                     }
                 }
-                constants::PACKET_TAIL => {
-                    // fail-safe against packet tail that sometimes gets sent in the payload for some reason
-                    break;
+                _ => {
+                    datas.push(WitcherPacketData::Unknown(type_bytes))
                 }
-                _ => return Err( format!("{}Unknown type bytes: {:?}", err, type_bytes) ),
             }
         }
 
@@ -216,6 +220,9 @@ impl std::fmt::Debug for WitcherPacketData {
             }
             Self::StringUTF16(s) => {
                 write!(f, "Type: StringUTF16\nLength: {}\nValue: {}", s.chars().count(), s)
+            },
+            Self::Unknown(b) => {
+                write!(f, "Type: Unknown\nValue: {:?}", b)
             }
         }
     }
@@ -230,7 +237,8 @@ impl std::fmt::Display for WitcherPacketData {
             Self::UInt32(i) => format!("{}", i),
             Self::Int64(i) => format!("{}", i),
             Self::StringUTF8(s) => format!("{}", s),
-            Self::StringUTF16(s) => format!("{}", s)
+            Self::StringUTF16(s) => format!("{}", s),
+            Self::Unknown(s) => format!("{:?}", s)
         };
 
         if let Some(width) = f.width() {
