@@ -1,11 +1,12 @@
 [package]
 name = "rw3d_cli"
-description = "CLI adapter for the RW3D core"
+description = "Command Line Interface for RWD features"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true
 
 [dependencies]
-rw3d_core = { path = "../core" }
+rw3d_net = { path = "../net" }
+rw3d_scriptslog = { path = "../scriptslog" }
 clap.workspace = true
 colored.workspace = true

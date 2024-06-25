@@ -1,6 +1,6 @@
 use colored::Colorize;
-use rw3d_core::packet::WitcherPacket;
-use rw3d_core::utils::{scripts_execute_formatter, scripts_root_path_formatter, mod_list_formatter, opcode_formatter, var_list_formatter, scripts_reload_formatter, scripts_reload_response_type, ScriptsReloadResponseType};
+use rw3d_net::packet::WitcherPacket;
+use rw3d_net::utils::{scripts_execute_formatter, scripts_root_path_formatter, mod_list_formatter, opcode_formatter, var_list_formatter, scripts_reload_formatter, scripts_reload_response_type, ScriptsReloadResponseType};
 
 
 

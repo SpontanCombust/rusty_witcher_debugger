@@ -1,0 +1,8 @@
+[package]
+name = "rw3d_net"
+description = "Witcher 3 network protocol implementation"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]

@@ -1,6 +1,6 @@
 [package]
-name = "rw3d_core"
-description = "Witcher 3 network protocol implementation and scriptslog tailing"
+name = "rw3d_scriptslog"
+description = "Witcher 3 scriptslog tailing"
 version.workspace = true
 edition.workspace = true
 authors.workspace = true

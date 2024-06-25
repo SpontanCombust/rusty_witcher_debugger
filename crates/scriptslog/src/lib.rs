@@ -1,7 +1,8 @@
 use std::{fs::{File, OpenOptions}, sync::mpsc::{Receiver, TryRecvError}, io::{BufReader, Seek, SeekFrom, Read, self}, time::Duration, path::{Path, PathBuf}};
 use directories::UserDirs;
 
-use crate::constants;
+pub const SCRIPTSLOG_FILE_NAME: &str = "scriptslog.txt";
+pub const LINUX_STEAM_PFX_PATH: &str = ".local/share/Steam/steamapps/compatdata/292030/pfx/drive_c/users/steamuser/Documents"; // it's ok to use forward slashes because this is Linux-specific
 
 
 /// A function that will keep reading from Witcher 3's script log file until it gets stopped through cancel token or stumbles upon some error.
@@ -41,7 +42,7 @@ fn scriptslog_file_path() -> Result<PathBuf, String> {
         } 
         else if cfg!(unix) {
             if let Some(path) = Some(ud.home_dir()) {
-                docs = Some(path.join(constants::LINUX_STEAM_PFX_PATH).to_owned());
+                docs = Some(path.join(LINUX_STEAM_PFX_PATH).to_owned());
             }
         } 
         else {
@@ -50,7 +51,7 @@ fn scriptslog_file_path() -> Result<PathBuf, String> {
     }
 
     if let Some(docs) = docs {
-        return Ok( docs.join(Path::new("The Witcher 3").join(constants::SCRIPTSLOG_FILE_NAME)) );
+        return Ok( docs.join(Path::new("The Witcher 3").join(SCRIPTSLOG_FILE_NAME)) );
     } else {
         return Err( "Documents directory could not be found.".to_owned() );
     }

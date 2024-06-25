@@ -67,7 +67,7 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
             if !options.no_wait { thread::sleep( Duration::from_millis(500) ) }
             println!("Setting up listeners...");
 
-            let listeners = rw3d_core::commands::listen_all();
+            let listeners = rw3d_net::commands::listen_all();
             for l in &listeners {
                 connection.write( l.to_bytes().as_slice() ).unwrap();
             }
@@ -81,30 +81,30 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
         let p = match cmd {
             ServerSubcommands::Reload { max_compile_time } => {
                 response_handler = Box::new(ScriptsReloadPrinter::new(max_compile_time));
-                rw3d_core::commands::scripts_reload()
+                rw3d_net::commands::scripts_reload()
             }
             ServerSubcommands::Exec { cmd } => {
                 response_handler = Box::new(ScriptsExecutePrinter());
-                rw3d_core::commands::scripts_execute(cmd)
+                rw3d_net::commands::scripts_execute(cmd)
             }
             ServerSubcommands::Rootpath => {
                 response_handler = Box::new(ScriptsRootpathPrinter());
-                rw3d_core::commands::scripts_root_path()
+                rw3d_net::commands::scripts_root_path()
             }
             ServerSubcommands::Modlist => {
                 response_handler = Box::new(ModlistPrinter());
-                rw3d_core::commands::mod_list()
+                rw3d_net::commands::mod_list()
             }
             ServerSubcommands::Opcode { func_name, class_name } => {
                 response_handler = Box::new(OpcodePrinter());
-                rw3d_core::commands::opcode(func_name, class_name)
+                rw3d_net::commands::opcode(func_name, class_name)
             }
             ServerSubcommands::Varlist { section, name } => {
                 response_handler = Box::new(VarlistPrinter());
-                rw3d_core::commands::var_list(section, name)
+                rw3d_net::commands::var_list(section, name)
             }
             // ServerSubcommands::Varset { section, name, value } => {
-            //     rw3d_core::commands::var_set(section, name, value)
+            //     rw3d_net::commands::var_set(section, name, value)
             // }
         };
 
@@ -139,7 +139,7 @@ fn try_connect(ip: String, max_tries: u8, tries_delay_ms: u64) -> Option<TcpStre
     while tries > 0 {
         println!("Connecting to the game...");
 
-        match TcpStream::connect(ip.clone() + ":" + rw3d_core::constants::GAME_PORT) {
+        match TcpStream::connect(ip.clone() + ":" + rw3d_net::constants::GAME_PORT) {
             Ok(conn) => {
                 return Some(conn);
             }
@@ -177,7 +177,7 @@ fn read_responses(stream: &mut TcpStream, response_timeout: u64, verbose_print: 
         }
 
         if packet_available {
-            match rw3d_core::packet::WitcherPacket::from_stream(stream) {
+            match rw3d_net::packet::WitcherPacket::from_stream(stream) {
                 Ok(packet) => {
                     handler.handle_response(packet, verbose_print); 
                 }

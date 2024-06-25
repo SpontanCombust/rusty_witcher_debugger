@@ -63,7 +63,7 @@ pub(crate) fn handle_local_subcommand( cmd: LocalSubcommands, options: CliOption
     match cmd {
         LocalSubcommands::Scriptslog { colors, refresh_time, filter_non_highlighted, custom_path } => {
             let highlights = scriptslog_colors_to_highlight_records(colors);
-            if let Some(err) = rw3d_core::scriptslog::tail_scriptslog(|text| scriptslog_printer(text, &highlights, filter_non_highlighted), refresh_time, logger_rcv, custom_path) {
+            if let Some(err) = rw3d_scriptslog::tail_scriptslog(|text| scriptslog_printer(text, &highlights, filter_non_highlighted), refresh_time, logger_rcv, custom_path) {
                 println!("{}", err);
             }
         }
