@@ -1,0 +1,9 @@
+[package]
+name = "rw3d_core"
+description = "Witcher 3 network protocol implementation and scriptslog tailing"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+directories.workspace = true

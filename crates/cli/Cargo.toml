@@ -1,0 +1,11 @@
+[package]
+name = "rw3d_cli"
+description = "CLI adapter for the RW3D core"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+rw3d_core = { path = "../core" }
+clap.workspace = true
+colored.workspace = true
