@@ -1,4 +1,4 @@
-use std::{io::Read};
+use std::io::Read;
 
 use crate::{packet_data::WitcherPacketData, constants};
 
@@ -104,12 +104,21 @@ impl WitcherPacket {
             return Err(err + "Incorrect packet tail");
         }
 
-        match WitcherPacketData::from_bytes(&payload_buffer) {
-            Ok(v) => {
-                packet.payload = v;
+        let mut offset = 0;
+        loop {
+            if offset >= payload_buffer.len() {
+                break;
             }
-            Err(e) => {
-                return Err(err + &e); 
+
+            let payload_slice = &payload_buffer[offset..];
+            match WitcherPacketData::from_bytes(payload_slice) {
+                Ok((data, bytes_read)) => {
+                    packet.payload.push(data);
+                    offset += bytes_read;
+                }
+                Err(e) => {
+                    return Err(err + &e); 
+                }
             }
         }
 

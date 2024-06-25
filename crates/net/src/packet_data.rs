@@ -84,114 +84,124 @@ impl WitcherPacketData {
         bytes
     }
 
-    pub fn from_bytes(payload: &[u8]) -> Result<Vec<WitcherPacketData>, String> {
+    pub fn from_bytes(payload: &[u8]) -> Result<(WitcherPacketData, usize), String> {
         // size of the payload is always kept on 2 bytes in the packet
         let err = String::from("Failed to parse payload - ");
         let mut offset: usize = 0;
-        let mut datas = Vec::new();
 
         if payload.len() <= 2 {
             return Err(err + "Payload size too small");
         }
 
-        while offset < payload.len() {
-            let type_bytes: [u8;2] = payload[ offset..(offset + 2) ].try_into().unwrap();
-            offset += 2;
-            match type_bytes {
-                constants::TYPE_INT8 => {
-                    if payload.len() - offset < 1 {
-                        return Err(err + "Not enough bytes provided to yield Int8");
-                    }
-                    datas.push( WitcherPacketData::Int8( i8::from_be_bytes( payload[ offset..(offset + 1) ].try_into().unwrap() ) ) );
-                    offset += 1;
+        let type_bytes: [u8; 2] = payload[ offset..(offset + 2) ].try_into().unwrap();
+        offset += 2;
+        match type_bytes {
+            constants::TYPE_INT8 => {
+                if payload.len() - offset < 1 {
+                    return Err(err + "Not enough bytes provided to yield Int8");
                 }
-                constants::TYPE_INT16 => {
-                    if payload.len() - offset < 2 {
-                        return Err(err + "Not enough bytes provided to yield Int16");
-                    }
-                    datas.push( WitcherPacketData::Int16( i16::from_be_bytes( payload[ offset..(offset + 2) ].try_into().unwrap() ) ) );
-                    offset += 2;
-                }
-                constants::TYPE_INT32 => {
-                    if payload.len() - offset < 4 {
-                        return Err(err + "Not enough bytes provided to yield Int32");
-                    }
-                    datas.push( WitcherPacketData::Int32( i32::from_be_bytes( payload[ offset..(offset + 4) ].try_into().unwrap() ) ) );
-                    offset += 4;
-                }
-                constants::TYPE_UINT32 => {
-                    if payload.len() - offset < 4 {
-                        return Err(err + "Not enough bytes provided to yield UInt32");
-                    }
-                    datas.push( WitcherPacketData::UInt32( u32::from_be_bytes( payload[ offset..(offset + 4) ].try_into().unwrap() ) ) );
-                    offset += 4;
-                }
-                constants::TYPE_INT64 => {
-                    if payload.len() - offset < 8 {
-                        return Err(err + "Not enough bytes provided to yield Int64");
-                    }
-                    datas.push( WitcherPacketData::Int64( i64::from_be_bytes( payload[ offset..(offset + 8) ].try_into().unwrap() ) ) );
-                    offset += 8;
-                }
-                constants::TYPE_STRING_UTF8 => {
-                    if payload.len() - offset < 4 {
-                        return Err(err + "Not enough bytes provided to yield StringUTF8");
-                    }
-    
-                    // Received length shouldn't be negative so we can parse it to u16 instead of i16
-                    // bytes 1-2 should be the type of string length, which checking can be ignored
-                    let str_len: usize = u16::from_be_bytes( payload[ (offset + 2)..(offset + 4) ].try_into().unwrap() ).into();
-                    offset += 4;
+                let data = WitcherPacketData::Int8(i8::from_be_bytes(payload[ offset..(offset + 1) ].try_into().unwrap()));
+                offset += 1;
 
-                    if payload.len() - offset < str_len {
-                        return Err(err + "Provided StringUTF8 length outside of payload bounds");
-                    }
-                    match str::from_utf8( &payload[ offset..(offset + str_len) ] ) {
-                        Ok(s) => {
-                            datas.push( WitcherPacketData::StringUTF8(s.to_owned()) );
-                            offset += str_len;
-                        }
-                        Err(e) => {
-                            return Err( format!("{}UTF8 conversion error: {}", err, e) );
-                        }
-                    }
+                Ok((data, offset))
+            }
+            constants::TYPE_INT16 => {
+                if payload.len() - offset < 2 {
+                    return Err(err + "Not enough bytes provided to yield Int16");
                 }
-                constants::TYPE_STRING_UTF16 => {
-                    if payload.len() - offset < 4 {
-                        return Err(err + "Not enough bytes provided to yield StringUTF16");
-                    }
-    
-                    // Received length shouldn't be negative so we can parse it to u16 instead of i16
-                    // bytes 1-2 should be the type of string length, which checking can be ignored
-                    let str_len: usize = u16::from_be_bytes( payload[ (offset + 2)..(offset + 4) ].try_into().unwrap() ).into();
-                    offset += 4;
+                let data = WitcherPacketData::Int16(i16::from_be_bytes(payload[ offset..(offset + 2)].try_into().unwrap()));
+                offset += 2;
 
-                    if payload.len() - offset < str_len * 2 {
-                        return Err(err + "Provided StringUTF16 length outside of payload bounds");
-                    }
-
-                    let decoded: Vec<u16> = 
-                        payload[ offset..(offset + str_len * 2) ].chunks_exact(2)
-                        .map(|hilo| ((hilo[0] as u16) << 8) + hilo[1] as u16 ) // turn two bytes into one short
-                        .collect();
-
-                    match String::from_utf16( decoded.as_slice() ) {
-                        Ok(s) => {
-                            datas.push( WitcherPacketData::StringUTF16(s) );
-                            offset += str_len * 2;
-                        }
-                        Err(e) => {
-                            return Err( format!("{}UTF16 conversion error: {}", err, e) );
-                        }
-                    }
+                Ok((data, offset))
+            }
+            constants::TYPE_INT32 => {
+                if payload.len() - offset < 4 {
+                    return Err(err + "Not enough bytes provided to yield Int32");
                 }
-                _ => {
-                    datas.push(WitcherPacketData::Unknown(type_bytes))
+                let data = WitcherPacketData::Int32(i32::from_be_bytes( payload[ offset..(offset + 4) ].try_into().unwrap()));
+                offset += 4;
+
+                Ok((data, offset))
+            }
+            constants::TYPE_UINT32 => {
+                if payload.len() - offset < 4 {
+                    return Err(err + "Not enough bytes provided to yield UInt32");
+                }
+                let data = WitcherPacketData::UInt32(u32::from_be_bytes( payload[ offset..(offset + 4) ].try_into().unwrap()));
+                offset += 4;
+
+                Ok((data, offset))
+            }
+            constants::TYPE_INT64 => {
+                if payload.len() - offset < 8 {
+                    return Err(err + "Not enough bytes provided to yield Int64");
+                }
+                let data = WitcherPacketData::Int64(i64::from_be_bytes( payload[ offset..(offset + 8) ].try_into().unwrap()));
+                offset += 8;
+
+                Ok((data, offset))
+            }
+            constants::TYPE_STRING_UTF8 => {
+                if payload.len() - offset < 4 {
+                    return Err(err + "Not enough bytes provided to yield StringUTF8");
+                }
+
+                // Received length shouldn't be negative so we can parse it to u16 instead of i16
+                // bytes 1-2 should be the type of string length, which checking can be ignored
+                let str_len: usize = u16::from_be_bytes( payload[ (offset + 2)..(offset + 4) ].try_into().unwrap() ).into();
+                offset += 4;
+
+                if payload.len() - offset < str_len {
+                    return Err(err + "Provided StringUTF8 length outside of payload bounds");
+                }
+                match str::from_utf8( &payload[ offset..(offset + str_len) ] ) {
+                    Ok(s) => {
+                        let data = WitcherPacketData::StringUTF8(s.to_owned());
+                        offset += str_len;
+
+                        Ok((data, offset))
+                    }
+                    Err(e) => {
+                        Err(format!("{}UTF8 conversion error: {}", err, e))
+                    }
                 }
             }
-        }
+            constants::TYPE_STRING_UTF16 => {
+                if payload.len() - offset < 4 {
+                    return Err(err + "Not enough bytes provided to yield StringUTF16");
+                }
 
-        Ok(datas)
+                // Received length shouldn't be negative so we can parse it to u16 instead of i16
+                // bytes 1-2 should be the type of string length, which checking can be ignored
+                let str_len: usize = u16::from_be_bytes( payload[ (offset + 2)..(offset + 4) ].try_into().unwrap() ).into();
+                offset += 4;
+
+                if payload.len() - offset < str_len * 2 {
+                    return Err(err + "Provided StringUTF16 length outside of payload bounds");
+                }
+
+                let decoded: Vec<u16> = 
+                    payload[ offset..(offset + str_len * 2) ].chunks_exact(2)
+                    .map(|hilo| ((hilo[0] as u16) << 8) + hilo[1] as u16 ) // turn two bytes into one short
+                    .collect();
+
+                match String::from_utf16( decoded.as_slice() ) {
+                    Ok(s) => {
+                        let data = WitcherPacketData::StringUTF16(s);
+                        offset += str_len * 2;
+
+                        Ok((data, offset))
+                    }
+                    Err(e) => {
+                        Err(format!("{}UTF16 conversion error: {}", err, e))
+                    }
+                }
+            }
+            _ => {
+                let data = WitcherPacketData::Unknown(type_bytes);
+                Ok((data, offset))
+            }
+        }
     }
 }
 
