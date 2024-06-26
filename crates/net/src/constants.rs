@@ -1,6 +1,3 @@
-pub const GAME_PORT: &str = "37001";
-
-
 pub const NAMESP_SCRIPT_DEBUGGER: &str = "ScriptDebugger";
 pub const NAMESP_SCRIPT_PROFILER: &str = "ScriptProfiler";
 pub const NAMESP_SCRIPT_COMPILER: &str = "ScriptCompiler";

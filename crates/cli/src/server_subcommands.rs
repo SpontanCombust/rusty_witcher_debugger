@@ -1,9 +1,10 @@
-use std::{thread, net::{Shutdown, TcpStream}, time::Duration};
+use std::{net::Ipv4Addr, str::FromStr, thread, time::Duration};
 
 use clap::Subcommand;
-use rw3d_net::encoding::{Decode, Encode};
+use rw3d_net::connection::WitcherConnection;
 
-use crate::{CliOptions, response_handling::{HandleResponse, ScriptsReloadPrinter, ScriptsExecutePrinter, ScriptsRootpathPrinter, ModlistPrinter, OpcodePrinter, VarlistPrinter}};
+use crate::{CliOptions, response_handling::*};
+
 
 /// Subcommands that require connection to game's socket and sending messages to it
 #[derive(Subcommand)]
@@ -58,89 +59,102 @@ pub(crate) enum ServerSubcommands {
 
 
 pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOptions ) {
-
-    if let Some(mut connection) = try_connect(options.ip.clone(), 5, 1000) {
-
-        if !options.no_wait { thread::sleep( Duration::from_millis(500) ) }
-        println!("Successfully connected to the game!");
-
-        if !options.no_listen {
-            if !options.no_wait { thread::sleep( Duration::from_millis(500) ) }
-            println!("Setting up listeners...");
-
-            let listeners = rw3d_net::commands::listen_all();
-            for l in &listeners {
-                l.encode_into(&mut connection).unwrap();
-            }
+    let ip: Ipv4Addr;
+    match Ipv4Addr::from_str(&options.ip) {
+        Ok(val) => {
+            ip = val;
         }
-
-
-        if !options.no_wait { thread::sleep( Duration::from_millis(500) ) }
-        println!("Handling the command...");
-
-        let response_handler: Box<dyn HandleResponse>;
-        let p = match cmd {
-            ServerSubcommands::Reload { max_compile_time } => {
-                response_handler = Box::new(ScriptsReloadPrinter::new(max_compile_time));
-                rw3d_net::commands::scripts_reload()
-            }
-            ServerSubcommands::Exec { cmd } => {
-                response_handler = Box::new(ScriptsExecutePrinter());
-                rw3d_net::commands::scripts_execute(cmd)
-            }
-            ServerSubcommands::Rootpath => {
-                response_handler = Box::new(ScriptsRootpathPrinter());
-                rw3d_net::commands::scripts_root_path()
-            }
-            ServerSubcommands::Modlist => {
-                response_handler = Box::new(ModlistPrinter());
-                rw3d_net::commands::mod_list()
-            }
-            ServerSubcommands::Opcode { func_name, class_name } => {
-                response_handler = Box::new(OpcodePrinter());
-                rw3d_net::commands::opcode(func_name, class_name)
-            }
-            ServerSubcommands::Varlist { section, name } => {
-                response_handler = Box::new(VarlistPrinter());
-                rw3d_net::commands::var_list(section, name)
-            }
-            // ServerSubcommands::Varset { section, name, value } => {
-            //     rw3d_net::commands::var_set(section, name, value)
-            // }
-        };
-
-        p.encode_into(&mut connection).unwrap();
-
-        if !options.no_listen {
-            println!("\nGame response:\n");
-            if !options.no_wait { thread::sleep( Duration::from_millis(1000) ) }
-
-            // This function can either finish by itself by the means of response timeout
-            // or be stopped by input waiter thread if that one sends him a signal
-            read_responses(&mut connection, options.response_timeout, options.verbose, response_handler);
-
-        } else {
-            // Wait a little bit to not finish the connection abruptly
-            thread::sleep( Duration::from_millis(500) );        
+        Err(err) => {
+            println!("Invalid IPv4 address specified: {}", err);
+            return;            
         }
+    }
 
-        if let Err(e) = connection.shutdown(Shutdown::Both) {
-            println!("{}", e);
-        }
-
+    let mut connection: WitcherConnection;
+    if let Some(val) = try_connect(ip, 5, 1000) {
+        connection = val;
     } else {
         println!("Failed to connect to the game on address {}", options.ip);
         println!("Make sure the game is running and that it was launched with following flags: -net -debugscripts.");
-    } 
+        return;
+    }
+
+
+    if !options.no_wait { thread::sleep( Duration::from_millis(500) ) }
+    println!("Successfully connected to the game!");
+
+    if !options.no_listen {
+        if !options.no_wait { thread::sleep( Duration::from_millis(500) ) }
+        println!("Setting up listeners...");
+
+        let listeners = rw3d_net::commands::listen_all();
+        for l in listeners {
+            connection.send(l).unwrap();
+        }
+    }
+
+
+    if !options.no_wait { thread::sleep( Duration::from_millis(500) ) }
+    println!("Handling the command...");
+
+    let response_handler: Box<dyn HandleResponse>;
+    let p = match cmd {
+        ServerSubcommands::Reload { max_compile_time } => {
+            response_handler = Box::new(ScriptsReloadPrinter::new(max_compile_time));
+            rw3d_net::commands::scripts_reload()
+        }
+        ServerSubcommands::Exec { cmd } => {
+            response_handler = Box::new(ScriptsExecutePrinter());
+            rw3d_net::commands::scripts_execute(cmd)
+        }
+        ServerSubcommands::Rootpath => {
+            response_handler = Box::new(ScriptsRootpathPrinter());
+            rw3d_net::commands::scripts_root_path()
+        }
+        ServerSubcommands::Modlist => {
+            response_handler = Box::new(ModlistPrinter());
+            rw3d_net::commands::mod_list()
+        }
+        ServerSubcommands::Opcode { func_name, class_name } => {
+            response_handler = Box::new(OpcodePrinter());
+            rw3d_net::commands::opcode(func_name, class_name)
+        }
+        ServerSubcommands::Varlist { section, name } => {
+            response_handler = Box::new(VarlistPrinter());
+            rw3d_net::commands::var_list(section, name)
+        }
+        // ServerSubcommands::Varset { section, name, value } => {
+        //     rw3d_net::commands::var_set(section, name, value)
+        // }
+    };
+
+    connection.send(p).unwrap();
+
+    if !options.no_listen {
+        println!("\nGame response:\n");
+        if !options.no_wait { thread::sleep( Duration::from_millis(1000) ) }
+
+        // This function can either finish by itself by the means of response timeout
+        // or be stopped by input waiter thread if that one sends him a signal
+        read_responses(&mut connection, options.response_timeout, options.verbose, response_handler);
+
+    } else {
+        // Wait a little bit to not finish the connection abruptly
+        thread::sleep( Duration::from_millis(500) );        
+    }
+
+    if let Err(e) = connection.shutdown() {
+        println!("{}", e);
+    }
 }
 
-fn try_connect(ip: String, max_tries: u8, tries_delay_ms: u64) -> Option<TcpStream> {
+fn try_connect(ip: Ipv4Addr, max_tries: u8, tries_delay_ms: u64) -> Option<WitcherConnection> {
     let mut tries = max_tries;
 
     while tries > 0 {
         println!("Connecting to the game...");
 
-        match TcpStream::connect(ip.clone() + ":" + rw3d_net::constants::GAME_PORT) {
+        match WitcherConnection::connect(ip.into()) {
             Ok(conn) => {
                 return Some(conn);
             }
@@ -156,29 +170,16 @@ fn try_connect(ip: String, max_tries: u8, tries_delay_ms: u64) -> Option<TcpStre
     None
 }
 
-fn read_responses(stream: &mut TcpStream, response_timeout: u64, verbose_print: bool, mut handler: Box<dyn HandleResponse>) {
-    let mut peek_buffer = [0u8;6];
-    let mut packet_available: bool;
+fn read_responses(connection: &mut WitcherConnection, response_timeout: u64, verbose_print: bool, mut handler: Box<dyn HandleResponse>) {
     let mut response_wait_elapsed: u64 = 0;
 
     const READ_TIMEOUT: u64 = 1000;
     // Timeout is set so that the peek operation won't block the thread indefinitely after it runs out of data to read
-    stream.set_read_timeout( Some(Duration::from_millis(READ_TIMEOUT)) ).unwrap();
+    connection.set_read_timeout( Some(Duration::from_millis(READ_TIMEOUT)) ).unwrap();
 
     loop {
-        // Test if there are packets available to be read from stream
-        // This can block up to the amount specified with set_read_timeout
-        match stream.peek(&mut peek_buffer) {
-            Ok(size) => {
-                packet_available = size > 0;
-            }
-            Err(_) => {
-                packet_available = false;
-            }
-        }
-
-        if packet_available {
-            match rw3d_net::packet::WitcherPacket::decode_from(stream) {
+        if connection.peek().unwrap_or(false) {
+            match connection.receive() {
                 Ok(packet) => {
                     handler.handle_response(packet, verbose_print); 
                 }
@@ -193,10 +194,9 @@ fn read_responses(stream: &mut TcpStream, response_timeout: u64, verbose_print: 
             }
 
             response_wait_elapsed = 0;
-
         } else {
             // if not available it means peek probably waited READ_TIMEOUT millis before it returned
-            response_wait_elapsed += READ_TIMEOUT;            
+            response_wait_elapsed += READ_TIMEOUT;
         }
 
         if response_wait_elapsed >= handler.response_await_time() + response_timeout {

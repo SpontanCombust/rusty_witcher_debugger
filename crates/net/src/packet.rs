@@ -62,7 +62,7 @@ impl WitcherPacket {
     }
 
 
-    pub fn min_encoded_size() -> usize {
+    pub const fn min_encoded_size() -> usize {
         Self::HEAD.len() + i16::ENCODED_SIZE + Self::TAIL.len()
     }
 }
