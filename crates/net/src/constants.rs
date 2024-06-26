@@ -24,15 +24,3 @@ pub const SCRIPTS_MODLIST: &str = "pkgSync";
 pub const CONFIG_VAR: i32 = 0xCC00CC00 as u32 as i32; // rust assumes literals to be positive numbers, so without writing this in decimal an explicit conversion is needed
 pub const CONFIG_VAR_LIST: &str = "list";
 pub const CONFIG_VAR_SET: &str = "set";
-
-
-pub const PACKET_HEAD: [u8; 2] = [0xDE, 0xAD];
-pub const PACKET_TAIL: [u8; 2] = [0xBE, 0xEF];
-
-pub const TYPE_INT8: [u8; 2] = [0x81, 0x08];
-pub const TYPE_INT16: [u8; 2] = [0x81, 0x16];
-pub const TYPE_INT32: [u8; 2] = [0x81, 0x32];
-pub const TYPE_UINT32: [u8; 2] = [0x71, 0x32];
-pub const TYPE_INT64: [u8; 2] = [0x81, 0x64];
-pub const TYPE_STRING_UTF8: [u8; 2] = [0xAC, 0x08];
-pub const TYPE_STRING_UTF16: [u8; 2] = [0x9C, 0x16];

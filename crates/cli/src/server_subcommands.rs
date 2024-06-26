@@ -1,6 +1,7 @@
-use std::{thread, net::{Shutdown, TcpStream}, time::Duration, io::Write};
+use std::{thread, net::{Shutdown, TcpStream}, time::Duration};
 
 use clap::Subcommand;
+use rw3d_net::encoding::{Decode, Encode};
 
 use crate::{CliOptions, response_handling::{HandleResponse, ScriptsReloadPrinter, ScriptsExecutePrinter, ScriptsRootpathPrinter, ModlistPrinter, OpcodePrinter, VarlistPrinter}};
 
@@ -69,7 +70,7 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
 
             let listeners = rw3d_net::commands::listen_all();
             for l in &listeners {
-                connection.write( l.to_bytes().as_slice() ).unwrap();
+                l.encode_into(&mut connection).unwrap();
             }
         }
 
@@ -108,7 +109,7 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
             // }
         };
 
-        connection.write( p.to_bytes().as_slice() ).unwrap();
+        p.encode_into(&mut connection).unwrap();
 
         if !options.no_listen {
             println!("\nGame response:\n");
@@ -177,7 +178,7 @@ fn read_responses(stream: &mut TcpStream, response_timeout: u64, verbose_print: 
         }
 
         if packet_available {
-            match rw3d_net::packet::WitcherPacket::from_stream(stream) {
+            match rw3d_net::packet::WitcherPacket::decode_from(stream) {
                 Ok(packet) => {
                     handler.handle_response(packet, verbose_print); 
                 }

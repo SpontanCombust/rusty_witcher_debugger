@@ -1,213 +1,125 @@
-use std::str;
+use anyhow::Context;
 
-use shrinkwraprs::Shrinkwrap;
-
-use crate::constants;
+use crate::encoding::*;
 
 
-#[derive(PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq)]
 pub(crate) enum WitcherPacketData {
-    Int8(i8),
-    Int16(i16),
-    Int32(i32),
-    UInt32(u32),
-    Int64(i64),
-    StringUTF8(StringUtf8),
-    StringUTF16(StringUtf16),
+    Int8(Tagged<i8>),
+    Int16(Tagged<i16>),
+    Int32(Tagged<i32>),
+    UInt32(Tagged<u32>),
+    Int64(Tagged<i64>),
+    StringUTF8(Tagged<StringUtf8>),
+    StringUTF16(Tagged<StringUtf16>),
     /// for cases where the data tag was not recognized
     Unknown(UnknownTag)
 }
 
 impl WitcherPacketData {
-    pub fn size(&self) -> usize {
-        match self {
-            WitcherPacketData::Int8(_) => 3, // 3 = data_type(2) + data(1)
-            WitcherPacketData::Int16(_) => 4, // 4 = data_type(2) + data(2) 
-            WitcherPacketData::Int32(_) => 6, // 6 = data_type(2) + data(4)
-            WitcherPacketData::UInt32(_) => 6, // 6 = data_type(2) + data(4)
-            WitcherPacketData::Int64(_) => 10, // 10 = data_type(2) + data(8)
-            WitcherPacketData::StringUTF8(s) => 6 + s.len(), // 6 = data_type(2) + string_size_type(2) + string_size(2)
-            WitcherPacketData::StringUTF16(s) => 6 + s.len() * 2, // 6 = data_type(2) + string_size_type(2) + string_size(2)
-            WitcherPacketData::Unknown(_) => 2
-        }
+    pub fn new_int8(n: i8) -> Self {
+        Self::Int8(Tagged::new(n))
     }
 
-    pub fn to_bytes(&self) -> Vec<u8> {
-        let mut bytes = Vec::<u8>::new();
-
-        match self {
-            WitcherPacketData::Int8(data) => {
-                bytes.extend(&constants::TYPE_INT8);
-                bytes.extend(data.to_be_bytes());
-            }
-            WitcherPacketData::Int16(data) => {
-                bytes.extend(&constants::TYPE_INT16);
-                bytes.extend(data.to_be_bytes());
-            }
-            WitcherPacketData::Int32(data) => {
-                bytes.extend(&constants::TYPE_INT32);
-                bytes.extend(data.to_be_bytes());
-            }
-            WitcherPacketData::UInt32(data) => {
-                bytes.extend(&constants::TYPE_UINT32);
-                bytes.extend(data.to_be_bytes());
-            }
-            WitcherPacketData::Int64(data) => {
-                bytes.extend(&constants::TYPE_INT64);
-                bytes.extend(data.to_be_bytes());
-            }
-            WitcherPacketData::StringUTF8(data) => {
-                let len_bytes = ( data.len() as i16 ).to_be_bytes();
-
-                bytes.extend(&constants::TYPE_STRING_UTF8);
-                bytes.extend(&constants::TYPE_INT16);
-                bytes.extend(len_bytes);
-                bytes.extend(data.as_bytes());
-            }
-            WitcherPacketData::StringUTF16(data) => {
-                let len_bytes = ( data.chars().count() as i16 ).to_be_bytes();
-
-                let encoded: Vec<u8> = 
-                    data.encode_utf16()
-                    .map(|c| c.to_be_bytes())
-                    .flatten()
-                    .collect();
-
-                bytes.extend(&constants::TYPE_STRING_UTF16);
-                bytes.extend(&constants::TYPE_INT16);
-                bytes.extend(len_bytes);
-                bytes.extend(encoded.as_slice());
-            },
-            WitcherPacketData::Unknown(data) => {
-                bytes.extend(&data.0)
-            }
-        }
-
-        bytes
+    pub fn new_int16(n: i16) -> Self {
+        Self::Int16(Tagged::new(n))
     }
 
-    pub fn from_bytes(payload: &[u8]) -> Result<(WitcherPacketData, usize), String> {
-        // size of the payload is always kept on 2 bytes in the packet
-        let err = String::from("Failed to parse payload - ");
-        let mut offset: usize = 0;
+    pub fn new_int32(n: i32) -> Self {
+        Self::Int32(Tagged::new(n))
+    }
 
-        if payload.len() <= 2 {
-            return Err(err + "Payload size too small");
-        }
+    pub fn new_uint32(n: u32) -> Self {
+        Self::UInt32(Tagged::new(n))
+    }
 
-        let type_bytes: [u8; 2] = payload[ offset..(offset + 2) ].try_into().unwrap();
-        offset += 2;
-        match type_bytes {
-            constants::TYPE_INT8 => {
-                if payload.len() - offset < 1 {
-                    return Err(err + "Not enough bytes provided to yield Int8");
-                }
-                let data = WitcherPacketData::Int8(i8::from_be_bytes(payload[ offset..(offset + 1) ].try_into().unwrap()));
-                offset += 1;
+    pub fn new_int64(n: i64) -> Self {
+        Self::Int64(Tagged::new(n))
+    }
 
-                Ok((data, offset))
-            }
-            constants::TYPE_INT16 => {
-                if payload.len() - offset < 2 {
-                    return Err(err + "Not enough bytes provided to yield Int16");
-                }
-                let data = WitcherPacketData::Int16(i16::from_be_bytes(payload[ offset..(offset + 2)].try_into().unwrap()));
-                offset += 2;
+    pub fn new_string_utf8(s: StringUtf8) -> Self {
+        Self::StringUTF8(Tagged::new(s))
+    }
 
-                Ok((data, offset))
-            }
-            constants::TYPE_INT32 => {
-                if payload.len() - offset < 4 {
-                    return Err(err + "Not enough bytes provided to yield Int32");
-                }
-                let data = WitcherPacketData::Int32(i32::from_be_bytes( payload[ offset..(offset + 4) ].try_into().unwrap()));
-                offset += 4;
+    pub fn new_string_utf16(s: StringUtf16) -> Self {
+        Self::StringUTF16(Tagged::new(s))
+    }
 
-                Ok((data, offset))
-            }
-            constants::TYPE_UINT32 => {
-                if payload.len() - offset < 4 {
-                    return Err(err + "Not enough bytes provided to yield UInt32");
-                }
-                let data = WitcherPacketData::UInt32(u32::from_be_bytes( payload[ offset..(offset + 4) ].try_into().unwrap()));
-                offset += 4;
+    pub fn new_unknown(t: UnknownTag) -> Self {
+        Self::Unknown(t)
+    }
+}
 
-                Ok((data, offset))
-            }
-            constants::TYPE_INT64 => {
-                if payload.len() - offset < 8 {
-                    return Err(err + "Not enough bytes provided to yield Int64");
-                }
-                let data = WitcherPacketData::Int64(i64::from_be_bytes( payload[ offset..(offset + 8) ].try_into().unwrap()));
-                offset += 8;
-
-                Ok((data, offset))
-            }
-            constants::TYPE_STRING_UTF8 => {
-                if payload.len() - offset < 4 {
-                    return Err(err + "Not enough bytes provided to yield StringUTF8");
-                }
-
-                // Received length shouldn't be negative so we can parse it to u16 instead of i16
-                // bytes 1-2 should be the type of string length, which checking can be ignored
-                let str_len: usize = u16::from_be_bytes( payload[ (offset + 2)..(offset + 4) ].try_into().unwrap() ).into();
-                offset += 4;
-
-                if payload.len() - offset < str_len {
-                    return Err(err + "Provided StringUTF8 length outside of payload bounds");
-                }
-                match str::from_utf8( &payload[ offset..(offset + str_len) ] ) {
-                    Ok(s) => {
-                        let data = WitcherPacketData::StringUTF8(s.into());
-                        offset += str_len;
-
-                        Ok((data, offset))
-                    }
-                    Err(e) => {
-                        Err(format!("{}UTF8 conversion error: {}", err, e))
-                    }
-                }
-            }
-            constants::TYPE_STRING_UTF16 => {
-                if payload.len() - offset < 4 {
-                    return Err(err + "Not enough bytes provided to yield StringUTF16");
-                }
-
-                // Received length shouldn't be negative so we can parse it to u16 instead of i16
-                // bytes 1-2 should be the type of string length, which checking can be ignored
-                let str_len: usize = u16::from_be_bytes( payload[ (offset + 2)..(offset + 4) ].try_into().unwrap() ).into();
-                offset += 4;
-
-                if payload.len() - offset < str_len * 2 {
-                    return Err(err + "Provided StringUTF16 length outside of payload bounds");
-                }
-
-                let decoded: Vec<u16> = 
-                    payload[ offset..(offset + str_len * 2) ].chunks_exact(2)
-                    .map(|hilo| ((hilo[0] as u16) << 8) + hilo[1] as u16 ) // turn two bytes into one short
-                    .collect();
-
-                match String::from_utf16( decoded.as_slice() ) {
-                    Ok(s) => {
-                        let data = WitcherPacketData::StringUTF16(s.into());
-                        offset += str_len * 2;
-
-                        Ok((data, offset))
-                    }
-                    Err(e) => {
-                        Err(format!("{}UTF16 conversion error: {}", err, e))
-                    }
-                }
-            }
-            _ => {
-                let data = WitcherPacketData::Unknown(type_bytes.into());
-                Ok((data, offset))
-            }
+impl Encode for WitcherPacketData {
+    fn encode_into<S: std::io::Write>(&self, stream: &mut S) -> anyhow::Result<()> {
+        match self {
+            WitcherPacketData::Int8(d) => d.encode_into(stream),
+            WitcherPacketData::Int16(d) => d.encode_into(stream),
+            WitcherPacketData::Int32(d) => d.encode_into(stream),
+            WitcherPacketData::UInt32(d) => d.encode_into(stream),
+            WitcherPacketData::Int64(d) => d.encode_into(stream),
+            WitcherPacketData::StringUTF8(d) => d.encode_into(stream),
+            WitcherPacketData::StringUTF16(d) => d.encode_into(stream),
+            WitcherPacketData::Unknown(d) => d.encode_into(stream),
         }
     }
 }
 
+impl DynSizedEncode for WitcherPacketData {
+    fn encoded_size(&self) -> usize {
+        match self {
+            WitcherPacketData::Int8(d) => d.encoded_size(),
+            WitcherPacketData::Int16(d) => d.encoded_size(),
+            WitcherPacketData::Int32(d) => d.encoded_size(),
+            WitcherPacketData::UInt32(d) => d.encoded_size(),
+            WitcherPacketData::Int64(d) => d.encoded_size(),
+            WitcherPacketData::StringUTF8(d) => d.encoded_size(),
+            WitcherPacketData::StringUTF16(d) => d.encoded_size(),
+            WitcherPacketData::Unknown(d) => d.encoded_size(),
+        }
+    }
+}
 
+impl Decode for WitcherPacketData {
+    fn decode_from<S: std::io::Read>(stream: &mut S) -> anyhow::Result<Self> {
+        let mut tag = [0u8; 2];
+        stream.read_exact(&mut tag).context("Failed to read a tag")?;
+
+        match tag {
+            i8::ENCODING_TAG => {
+                let d = i8::decode_from(stream)?;
+                Ok(WitcherPacketData::new_int8(d))
+            },
+            i16::ENCODING_TAG => {
+                let d = i16::decode_from(stream)?;
+                Ok(WitcherPacketData::new_int16(d))
+            },
+            i32::ENCODING_TAG => {
+                let d = i32::decode_from(stream)?;
+                Ok(WitcherPacketData::new_int32(d))
+            },
+            u32::ENCODING_TAG => {
+                let d = u32::decode_from(stream)?;
+                Ok(WitcherPacketData::new_uint32(d))
+            },
+            i64::ENCODING_TAG => {
+                let d = i64::decode_from(stream)?;
+                Ok(WitcherPacketData::new_int64(d))
+            },
+            StringUtf8::ENCODING_TAG => {
+                let d = StringUtf8::decode_from(stream)?;
+                Ok(WitcherPacketData::new_string_utf8(d))
+            },
+            StringUtf16::ENCODING_TAG => {
+                let d = StringUtf16::decode_from(stream)?;
+                Ok(WitcherPacketData::new_string_utf16(d))
+            },
+            _ => {
+                Ok(WitcherPacketData::new_unknown(tag.into()))
+            }
+        }
+    }
+}
 
 impl std::fmt::Debug for WitcherPacketData {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
@@ -258,62 +170,5 @@ impl std::fmt::Display for WitcherPacketData {
         } else {
             write!(f, "{}", s)
         }
-    }
-}
-
-
-
-#[derive(Shrinkwrap, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct StringUtf8(pub String);
-
-impl std::fmt::Display for StringUtf8 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl From<String> for StringUtf8 {
-    fn from(value: String) -> Self {
-        Self(value)
-    }
-}
-
-impl From<&str> for StringUtf8 {
-    fn from(value: &str) -> Self {
-        Self(value.to_string())
-    }
-}
-
-
-
-#[derive(Shrinkwrap, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct StringUtf16(pub String);
-
-impl std::fmt::Display for StringUtf16 {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        self.0.fmt(f)
-    }
-}
-
-impl From<String> for StringUtf16 {
-    fn from(value: String) -> Self {
-        Self(value)
-    }
-}
-
-impl From<&str> for StringUtf16 {
-    fn from(value: &str) -> Self {
-        Self(value.to_string())
-    }
-}
-
-
-
-#[derive(Shrinkwrap, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
-pub struct UnknownTag(pub [u8; 2]);
-
-impl From<[u8; 2]> for UnknownTag {
-    fn from(value: [u8; 2]) -> Self {
-        Self(value)
     }
 }
