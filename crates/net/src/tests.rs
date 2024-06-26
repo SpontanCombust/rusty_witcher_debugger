@@ -69,7 +69,7 @@ mod tests {
     
     #[test]
     fn packet_data_string_utf8_parse_test() {
-        let i = WitcherPacketData::StringUTF8("Gaderypoluki".to_owned());
+        let i = WitcherPacketData::StringUTF8("Gaderypoluki".into());
         let bytes = i.to_bytes();
         let packet = WitcherPacketData::from_bytes(bytes.as_slice());
     
@@ -82,7 +82,7 @@ mod tests {
     
     #[test]
     fn packet_data_string_utf16_parse_test() {
-        let i = WitcherPacketData::StringUTF16("Zażółć gęślą jaźń".to_owned());
+        let i = WitcherPacketData::StringUTF16("Zażółć gęślą jaźń".into());
         let bytes = i.to_bytes();
         let packet = WitcherPacketData::from_bytes(bytes.as_slice());
     

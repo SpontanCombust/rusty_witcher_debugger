@@ -1,5 +1,7 @@
 use std::str;
 
+use shrinkwraprs::Shrinkwrap;
+
 use crate::constants;
 
 
@@ -10,10 +12,10 @@ pub(crate) enum WitcherPacketData {
     Int32(i32),
     UInt32(u32),
     Int64(i64),
-    StringUTF8(String),
-    StringUTF16(String),
+    StringUTF8(StringUtf8),
+    StringUTF16(StringUtf16),
     /// for cases where the data tag was not recognized
-    Unknown([u8; 2])
+    Unknown(UnknownTag)
 }
 
 impl WitcherPacketData {
@@ -77,7 +79,7 @@ impl WitcherPacketData {
                 bytes.extend(encoded.as_slice());
             },
             WitcherPacketData::Unknown(data) => {
-                bytes.extend(data)
+                bytes.extend(&data.0)
             }
         }
 
@@ -156,7 +158,7 @@ impl WitcherPacketData {
                 }
                 match str::from_utf8( &payload[ offset..(offset + str_len) ] ) {
                     Ok(s) => {
-                        let data = WitcherPacketData::StringUTF8(s.to_owned());
+                        let data = WitcherPacketData::StringUTF8(s.into());
                         offset += str_len;
 
                         Ok((data, offset))
@@ -187,7 +189,7 @@ impl WitcherPacketData {
 
                 match String::from_utf16( decoded.as_slice() ) {
                     Ok(s) => {
-                        let data = WitcherPacketData::StringUTF16(s);
+                        let data = WitcherPacketData::StringUTF16(s.into());
                         offset += str_len * 2;
 
                         Ok((data, offset))
@@ -198,7 +200,7 @@ impl WitcherPacketData {
                 }
             }
             _ => {
-                let data = WitcherPacketData::Unknown(type_bytes);
+                let data = WitcherPacketData::Unknown(type_bytes.into());
                 Ok((data, offset))
             }
         }
@@ -256,5 +258,62 @@ impl std::fmt::Display for WitcherPacketData {
         } else {
             write!(f, "{}", s)
         }
+    }
+}
+
+
+
+#[derive(Shrinkwrap, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct StringUtf8(pub String);
+
+impl std::fmt::Display for StringUtf8 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl From<String> for StringUtf8 {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl From<&str> for StringUtf8 {
+    fn from(value: &str) -> Self {
+        Self(value.to_string())
+    }
+}
+
+
+
+#[derive(Shrinkwrap, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct StringUtf16(pub String);
+
+impl std::fmt::Display for StringUtf16 {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
+
+impl From<String> for StringUtf16 {
+    fn from(value: String) -> Self {
+        Self(value)
+    }
+}
+
+impl From<&str> for StringUtf16 {
+    fn from(value: &str) -> Self {
+        Self(value.to_string())
+    }
+}
+
+
+
+#[derive(Shrinkwrap, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub struct UnknownTag(pub [u8; 2]);
+
+impl From<[u8; 2]> for UnknownTag {
+    fn from(value: [u8; 2]) -> Self {
+        Self(value)
     }
 }

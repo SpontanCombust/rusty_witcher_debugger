@@ -44,19 +44,19 @@ impl WitcherPacket {
     }
 
     pub fn append_utf8_raw(self, data: &str) -> Self {
-        self.append( WitcherPacketData::StringUTF8(data.to_owned()) )
+        self.append( WitcherPacketData::StringUTF8(data.into()) )
     }
 
     pub fn append_utf8(self, data: String) -> Self {
-        self.append( WitcherPacketData::StringUTF8(data) )
+        self.append( WitcherPacketData::StringUTF8(data.into()) )
     }
 
     pub fn append_utf16_raw(self, data: &str) -> Self {
-        self.append( WitcherPacketData::StringUTF16(data.to_owned()) )
+        self.append( WitcherPacketData::StringUTF16(data.into()) )
     }
 
     pub fn append_utf16(self, data: String) -> Self {
-        self.append( WitcherPacketData::StringUTF16(data) )
+        self.append( WitcherPacketData::StringUTF16(data.into()) )
     }
 
     pub fn to_bytes(&self) -> Vec<u8> {

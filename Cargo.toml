@@ -13,3 +13,5 @@ authors = ["SpontanCombust"]
 clap = { version = "^3.0", features = ["derive"] }
 directories = "4.0"
 colored = "2.0"
+anyhow = "1.0.86"
+shrinkwraprs = "0.3.0"
