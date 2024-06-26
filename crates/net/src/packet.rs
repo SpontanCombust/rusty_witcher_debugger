@@ -101,13 +101,9 @@ impl Decode for WitcherPacket {
         if encoded_size > Self::min_encoded_size() as u16 {
             encoded_size -= Self::min_encoded_size() as u16;
 
-            loop {
-                if encoded_size <= 0 {
-                    break;
-                }
-
+            while encoded_size > 0 {
                 let data = WitcherPacketData::decode_from(stream).context("Failed to decode payload data")?;
-                encoded_size -= data.encoded_size() as u16;
+                encoded_size = encoded_size.checked_sub(data.encoded_size() as u16).unwrap_or(0);
                 packet.payload.push(data);
             }
         }
