@@ -235,7 +235,7 @@ impl Decode for StringUtf8 {
         let mut content_buf = vec![0u8; len];
         stream.read_exact(&mut content_buf).context("Failed to read UTF8 string contents")?;
 
-        let s = String::from_utf8(content_buf)?;
+        let s = String::from_utf8_lossy(&content_buf).to_string();
         Ok(Self(s))
     }
 }
@@ -316,7 +316,7 @@ impl Decode for StringUtf16 {
             .map(|hilo| u16::from_be_bytes(hilo))
             .collect::<Vec<_>>();
 
-        let s = String::from_utf16(decoded_content.as_slice())?;
+        let s = String::from_utf16_lossy(decoded_content.as_slice());
         Ok(Self(s))
     }
 }
