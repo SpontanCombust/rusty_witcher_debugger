@@ -1,12 +1,13 @@
-use crate::protocol::WitcherPacket;
+use crate::protocol::{WitcherPacket, WitcherPacketBuilder};
 use crate::constants;
 
 /// Listen to game messages coming from given namespace
 /// * `namespace` - namespace to listen to
 pub fn listen(namespace: String) -> WitcherPacket {
-    WitcherPacket::new()
-        .append_utf8_raw(constants::CMD_BIND)
-        .append_utf8(namespace)
+    WitcherPacketBuilder::new()
+        .string_utf8(constants::CMD_BIND)
+        .string_utf8(namespace)
+        .finish()
 }
 
 /// Listen to game messages coming from all namespaces
@@ -24,49 +25,56 @@ pub fn listen_all() -> Vec<WitcherPacket> {
 
 /// Reload game scripts
 pub fn scripts_reload() -> WitcherPacket {
-    WitcherPacket::new()
-        .append_utf8_raw(constants::NAMESP_SCRIPTS)
-        .append_utf8_raw(constants::SCRIPTS_RELOAD)
+    WitcherPacketBuilder::new()
+        .string_utf8(constants::NAMESP_SCRIPTS)
+        .string_utf8(constants::SCRIPTS_RELOAD)
+        .finish()
 }
 
 /// Get root directory path of game scripts
 pub fn scripts_root_path() -> WitcherPacket {
-    WitcherPacket::new()
-        .append_utf8_raw(constants::NAMESP_SCRIPT_COMPILER)
-        .append_utf8_raw(constants::SCRIPT_COMPILER_ROOT_PATH)
+    WitcherPacketBuilder::new()
+        .string_utf8(constants::NAMESP_SCRIPT_COMPILER)
+        .string_utf8(constants::SCRIPT_COMPILER_ROOT_PATH)
+        .finish()
 }
 
 /// Run exec function from the game
 /// * `command` - exec command to execute in the game
 #[allow(overflowing_literals)]
 pub fn scripts_execute(command: String) -> WitcherPacket {
-    WitcherPacket::new()
-        .append_utf8_raw(constants::NAMESP_REMOTE)
-        .append_int32(0x12345678)
-        .append_int32(0x81160008)
-        .append_utf8(command)
+    WitcherPacketBuilder::new()
+        .string_utf8(constants::NAMESP_REMOTE)
+        .int32(0x12345678)
+        .int32(0x81160008)
+        .string_utf8(command)
+        .finish()
 }
 
 /// Get the list of installed mods
 pub fn mod_list() -> WitcherPacket {
-    WitcherPacket::new()
-        .append_utf8_raw(constants::NAMESP_SCRIPTS)
-        .append_utf8_raw(constants::SCRIPTS_MODLIST)
+    WitcherPacketBuilder::new()
+        .string_utf8(constants::NAMESP_SCRIPTS)
+        .string_utf8(constants::SCRIPTS_MODLIST)
+        .finish()
 }
 
 /// Get the opcode of a script function
 /// * `func_name` - name of the function
 /// * `class_name` - name of the class if the function is a member of that class; pass None if it's not a method
 pub fn opcode(func_name: String, class_name: Option<String>) -> WitcherPacket {
-    let packet = WitcherPacket::new()
-        .append_utf8_raw(constants::NAMESP_SCRIPT_DEBUGGER)
-        .append_utf8_raw(constants::SCRIPT_DEBUGGER_OPCODE_REQUEST)
-        .append_utf16(func_name);
+    let builder = WitcherPacketBuilder::new()
+        .string_utf8(constants::NAMESP_SCRIPT_DEBUGGER)
+        .string_utf8(constants::SCRIPT_DEBUGGER_OPCODE_REQUEST)
+        .string_utf16(func_name);
     
     if let Some(class) = class_name {
-        return packet.append_int8(1).append_utf16(class);
+        builder.int8(1)
+            .string_utf16(class)
+            .finish()
     } else {
-        return packet.append_int8(0);
+        builder.int8(0)
+            .finish()
     }
 }
 
@@ -74,12 +82,13 @@ pub fn opcode(func_name: String, class_name: Option<String>) -> WitcherPacket {
 /// * `section` - var section to search; if None is passed searches all sections
 /// * `name` - token that should be included in vars; if None is passed searches all variables
 pub fn var_list(section: Option<String>, name: Option<String>) -> WitcherPacket {
-    WitcherPacket::new()
-        .append_utf8_raw(constants::NAMESP_CONFIG)
-        .append_int32(constants::CONFIG_VAR)
-        .append_utf8_raw(constants::CONFIG_VAR_LIST)
-        .append_utf8(section.unwrap_or("".to_owned()))
-        .append_utf8(name.unwrap_or("".to_owned()))
+    WitcherPacketBuilder::new()
+        .string_utf8(constants::NAMESP_CONFIG)
+        .int32(constants::CONFIG_VAR)
+        .string_utf8(constants::CONFIG_VAR_LIST)
+        .string_utf8(section.unwrap_or("".to_owned()))
+        .string_utf8(name.unwrap_or("".to_owned()))
+        .finish()
 }
 
 /// Sets a config variable
@@ -87,13 +96,14 @@ pub fn var_list(section: Option<String>, name: Option<String>) -> WitcherPacket 
 /// * `name` - variable's name 
 /// * `value` - variable's new value 
 pub fn var_set(section: String, name: String, value: String) -> WitcherPacket {
-    WitcherPacket::new()
-        .append_utf8_raw(constants::NAMESP_CONFIG)
-        .append_int32(constants::CONFIG_VAR)
-        .append_utf8_raw(constants::CONFIG_VAR_SET)
-        .append_utf8(section)
-        .append_utf8(name)
-        .append_utf16(value)
+    WitcherPacketBuilder::new()
+        .string_utf8(constants::NAMESP_CONFIG)
+        .int32(constants::CONFIG_VAR)
+        .string_utf8(constants::CONFIG_VAR_SET)
+        .string_utf8(section)
+        .string_utf8(name)
+        .string_utf16(value)
+        .finish()
 }
 
 
