@@ -46,8 +46,17 @@ impl WitcherConnection {
 
     pub fn peek(&self) -> anyhow::Result<bool> {
         let mut peek_buffer = [0u8; WitcherPacket::min_encoded_size()];
-        let available = self.stream.peek(&mut peek_buffer)? >= peek_buffer.len();
-        Ok(available)
+        match self.stream.peek(&mut peek_buffer) {
+            Ok(peeked) => {
+                Ok(peeked >= peek_buffer.len())
+            }
+            Err(err) if matches!(err.kind(), std::io::ErrorKind::TimedOut) => {
+                Ok(false)
+            },
+            Err(err) => {
+                Err(err)?
+            }
+        }
     }
 
 
