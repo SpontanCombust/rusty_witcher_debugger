@@ -35,22 +35,22 @@ pub fn scripts_reload_response_type(response: &WitcherPacket) -> Result<ScriptsR
         (file, line, msg)
     }
 
-    if response.payload.len() > 2 && response.payload[0] == WitcherPacketData::new_string_utf8("ScriptCompiler".into()) {
-        if response.payload[1] == WitcherPacketData::new_string_utf8("started".into()) {
+    if response.payload.len() > 2 && response.payload[0] == WitcherPacketData::new_string_utf8("ScriptCompiler") {
+        if response.payload[1] == WitcherPacketData::new_string_utf8("started") {
             return Ok(ScriptsReloadResponseType::Started);
         }
-        else if response.payload[1] == WitcherPacketData::new_string_utf8("log".into()) {
+        else if response.payload[1] == WitcherPacketData::new_string_utf8("log") {
             return Ok(ScriptsReloadResponseType::Log( response.payload[2].to_string() ));
         }
-        else if response.payload[1] == WitcherPacketData::new_string_utf8("warn".into()) {
+        else if response.payload[1] == WitcherPacketData::new_string_utf8("warn") {
             let (file, line, msg) = file_line_msg(response);
             return Ok(ScriptsReloadResponseType::Warn{ file, line, msg });
         }
-        else if response.payload[1] == WitcherPacketData::new_string_utf8("error".into()) {
+        else if response.payload[1] == WitcherPacketData::new_string_utf8("error") {
             let (file, line, msg) = file_line_msg(response);
             return Ok(ScriptsReloadResponseType::Error{ file, line, msg });
         }
-        else if response.payload[1] == WitcherPacketData::new_string_utf8("finished".into()) {
+        else if response.payload[1] == WitcherPacketData::new_string_utf8("finished") {
             return Ok(ScriptsReloadResponseType::Finished( response.payload[2] == WitcherPacketData::new_int8(0) ));
         }
     } 
@@ -91,8 +91,8 @@ pub fn scripts_reload_formatter(response: &WitcherPacket) -> String {
 
 pub fn scripts_root_path_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() > 2 
-    && response.payload[0] == WitcherPacketData::new_string_utf8("ScriptCompiler".into()) 
-    && response.payload[1] == WitcherPacketData::new_string_utf8("RootPathConfirm".into()) {
+    && response.payload[0] == WitcherPacketData::new_string_utf8("ScriptCompiler") 
+    && response.payload[1] == WitcherPacketData::new_string_utf8("RootPathConfirm") {
         return response.payload[2].to_string();
     }
 
@@ -111,8 +111,8 @@ pub fn scripts_execute_formatter(response: &WitcherPacket) -> String {
 
 pub fn mod_list_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() >= 3 
-    && response.payload[0] == WitcherPacketData::new_string_utf8("scripts".into()) 
-    && response.payload[1] == WitcherPacketData::new_string_utf8("pkgSyncListing".into()) {
+    && response.payload[0] == WitcherPacketData::new_string_utf8("scripts") 
+    && response.payload[1] == WitcherPacketData::new_string_utf8("pkgSyncListing") {
         let mut result = String::new();
         
         if let WitcherPacketData::Int32(installed) = response.payload[2] {
@@ -139,8 +139,8 @@ pub fn mod_list_formatter(response: &WitcherPacket) -> String {
 
 pub fn opcode_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() == 9
-    && response.payload[0] == WitcherPacketData::new_string_utf8("ScriptDebugger".into()) 
-    && response.payload[1] == WitcherPacketData::new_string_utf8("OpcodeBreakdownResponse".into()) {
+    && response.payload[0] == WitcherPacketData::new_string_utf8("ScriptDebugger") 
+    && response.payload[1] == WitcherPacketData::new_string_utf8("OpcodeBreakdownResponse") {
         // I don't know what most of these magical numbers in the response mean
         // so I'm gonna print out only the stuff that looks anywhere useful
         return format!("{}{}", response.payload[6], response.payload[8]);
@@ -158,7 +158,7 @@ struct VarlistEntry {
 
 pub fn var_list_formatter(response: &WitcherPacket) -> String {
     if response.payload.len() > 4 
-    && response.payload[1] == WitcherPacketData::new_string_utf8("vars".into()) {
+    && response.payload[1] == WitcherPacketData::new_string_utf8("vars") {
         let mut result = String::new();
 
         let tab_line = format!("{}+-{}+-{}\n", "-".repeat(40), "-".repeat(45), "-".repeat(40) );

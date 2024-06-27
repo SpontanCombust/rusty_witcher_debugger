@@ -191,7 +191,7 @@ impl Decode for i64 {
 
 
 
-#[derive(Shrinkwrap, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Shrinkwrap, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StringUtf8(pub String);
 
 impl StringUtf8 {
@@ -260,7 +260,7 @@ impl From<&str> for StringUtf8 {
 
 
 
-#[derive(Shrinkwrap, Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Shrinkwrap, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct StringUtf16(pub String);
 
 impl StringUtf16 {
@@ -341,7 +341,7 @@ impl From<&str> for StringUtf16 {
 
 
 
-#[derive(Shrinkwrap, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Shrinkwrap, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct UnknownTag(pub [u8; 2]);
 
 impl From<[u8; 2]> for UnknownTag {
@@ -365,7 +365,7 @@ impl ConstSizedEncode for UnknownTag {
 
 
 
-#[derive(Shrinkwrap, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(Shrinkwrap, Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub struct Tagged<T> {
     inner: T
 }

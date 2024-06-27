@@ -1,9 +1,10 @@
 use anyhow::Context;
+use strum_macros::EnumTryAs;
 
 use super::encoding::*;
 
 
-#[derive(Clone, PartialEq, Eq)]
+#[derive(Clone, PartialEq, Eq, Hash, EnumTryAs)]
 pub enum WitcherPacketData {
     Int8(Tagged<i8>),
     Int16(Tagged<i16>),
@@ -37,12 +38,12 @@ impl WitcherPacketData {
         Self::Int64(Tagged::new(n))
     }
 
-    pub fn new_string_utf8(s: StringUtf8) -> Self {
-        Self::StringUTF8(Tagged::new(s))
+    pub fn new_string_utf8<S: Into<StringUtf8>>(s: S) -> Self {
+        Self::StringUTF8(Tagged::new(s.into()))
     }
 
-    pub fn new_string_utf16(s: StringUtf16) -> Self {
-        Self::StringUTF16(Tagged::new(s))
+    pub fn new_string_utf16<S: Into<StringUtf16>>(s: S) -> Self {
+        Self::StringUTF16(Tagged::new(s.into()))
     }
 
     pub fn new_unknown(t: UnknownTag) -> Self {
@@ -245,7 +246,7 @@ mod tests {
     
     #[test]
     fn packet_data_string_utf8_parse_test() {
-        let i = WitcherPacketData::new_string_utf8("Gaderypoluki".into());
+        let i = WitcherPacketData::new_string_utf8("Gaderypoluki");
         let mut bytes = VecDeque::new();
         i.encode_into(&mut bytes).unwrap();
         let packet = WitcherPacketData::decode_from(&mut bytes).unwrap();
@@ -257,7 +258,7 @@ mod tests {
     
     #[test]
     fn packet_data_string_utf16_parse_test() {
-        let i = WitcherPacketData::new_string_utf16("Zażółć gęślą jaźń".into());
+        let i = WitcherPacketData::new_string_utf16("Zażółć gęślą jaźń");
         let mut bytes = VecDeque::new();
         i.encode_into(&mut bytes).unwrap();
         let packet = WitcherPacketData::decode_from(&mut bytes).unwrap();
