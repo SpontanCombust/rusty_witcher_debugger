@@ -2,11 +2,11 @@ use super::{StringUtf16, StringUtf8, WitcherPacket, WitcherPacketData};
 
 
 #[derive(Debug, Clone)]
-pub struct WitcherPacketBuilder {
+pub struct WitcherPacketAssembler {
     payload: Vec<WitcherPacketData>
 }
 
-impl WitcherPacketBuilder {
+impl WitcherPacketAssembler {
     #[inline]
     pub fn new() -> Self {
         Self {

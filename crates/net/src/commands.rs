@@ -1,10 +1,10 @@
-use crate::protocol::{WitcherPacket, WitcherPacketBuilder};
+use crate::protocol::{WitcherPacket, WitcherPacketAssembler};
 use crate::constants;
 
 /// Listen to game messages coming from given namespace
 /// * `namespace` - namespace to listen to
 pub fn listen(namespace: String) -> WitcherPacket {
-    WitcherPacketBuilder::new()
+    WitcherPacketAssembler::new()
         .string_utf8(constants::CMD_BIND)
         .string_utf8(namespace)
         .finish()
@@ -25,7 +25,7 @@ pub fn listen_all() -> Vec<WitcherPacket> {
 
 /// Reload game scripts
 pub fn scripts_reload() -> WitcherPacket {
-    WitcherPacketBuilder::new()
+    WitcherPacketAssembler::new()
         .string_utf8(constants::NAMESP_SCRIPTS)
         .string_utf8(constants::SCRIPTS_RELOAD)
         .finish()
@@ -33,7 +33,7 @@ pub fn scripts_reload() -> WitcherPacket {
 
 /// Get root directory path of game scripts
 pub fn scripts_root_path() -> WitcherPacket {
-    WitcherPacketBuilder::new()
+    WitcherPacketAssembler::new()
         .string_utf8(constants::NAMESP_SCRIPT_COMPILER)
         .string_utf8(constants::SCRIPT_COMPILER_ROOT_PATH)
         .finish()
@@ -43,7 +43,7 @@ pub fn scripts_root_path() -> WitcherPacket {
 /// * `command` - exec command to execute in the game
 #[allow(overflowing_literals)]
 pub fn scripts_execute(command: String) -> WitcherPacket {
-    WitcherPacketBuilder::new()
+    WitcherPacketAssembler::new()
         .string_utf8(constants::NAMESP_REMOTE)
         .int32(0x12345678)
         .int32(0x81160008)
@@ -53,7 +53,7 @@ pub fn scripts_execute(command: String) -> WitcherPacket {
 
 /// Get the list of installed mods
 pub fn mod_list() -> WitcherPacket {
-    WitcherPacketBuilder::new()
+    WitcherPacketAssembler::new()
         .string_utf8(constants::NAMESP_SCRIPTS)
         .string_utf8(constants::SCRIPTS_MODLIST)
         .finish()
@@ -63,7 +63,7 @@ pub fn mod_list() -> WitcherPacket {
 /// * `func_name` - name of the function
 /// * `class_name` - name of the class if the function is a member of that class; pass None if it's not a method
 pub fn opcode(func_name: String, class_name: Option<String>) -> WitcherPacket {
-    let builder = WitcherPacketBuilder::new()
+    let builder = WitcherPacketAssembler::new()
         .string_utf8(constants::NAMESP_SCRIPT_DEBUGGER)
         .string_utf8(constants::SCRIPT_DEBUGGER_OPCODE_REQUEST)
         .string_utf16(func_name);
@@ -82,7 +82,7 @@ pub fn opcode(func_name: String, class_name: Option<String>) -> WitcherPacket {
 /// * `section` - var section to search; if None is passed searches all sections
 /// * `name` - token that should be included in vars; if None is passed searches all variables
 pub fn var_list(section: Option<String>, name: Option<String>) -> WitcherPacket {
-    WitcherPacketBuilder::new()
+    WitcherPacketAssembler::new()
         .string_utf8(constants::NAMESP_CONFIG)
         .int32(constants::CONFIG_VAR)
         .string_utf8(constants::CONFIG_VAR_LIST)
@@ -96,7 +96,7 @@ pub fn var_list(section: Option<String>, name: Option<String>) -> WitcherPacket 
 /// * `name` - variable's name 
 /// * `value` - variable's new value 
 pub fn var_set(section: String, name: String, value: String) -> WitcherPacket {
-    WitcherPacketBuilder::new()
+    WitcherPacketAssembler::new()
         .string_utf8(constants::NAMESP_CONFIG)
         .int32(constants::CONFIG_VAR)
         .string_utf8(constants::CONFIG_VAR_SET)

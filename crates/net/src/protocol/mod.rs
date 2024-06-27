@@ -7,5 +7,5 @@ pub use packet_data::*;
 mod packet;
 pub use packet::*;
 
-mod packet_builder;
-pub use packet_builder::*;
+mod packet_assembly;
+pub use packet_assembly::*;
