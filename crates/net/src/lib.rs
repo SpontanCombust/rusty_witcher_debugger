@@ -1,6 +1,4 @@
-mod tests;
-
-pub mod constants;
+mod constants;
 pub mod encoding;
 pub mod packet_data;
 pub mod packet;

@@ -95,3 +95,129 @@ pub fn var_set(section: String, name: String, value: String) -> WitcherPacket {
         .append_utf8(name)
         .append_utf16(value)
 }
+
+
+
+
+
+#[cfg(test)]
+mod tests {
+    use std::collections::VecDeque;
+
+    use crate::{commands, encoding::*, packet::WitcherPacket};
+    
+    
+    #[test]
+    fn command_listen_parse_test() {
+        let packets = commands::listen_all();
+        for p1 in packets {
+            let mut bytes = VecDeque::new();
+            p1.encode_into(&mut bytes).unwrap();
+            let p2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+        
+            assert_eq!(p1, p2);
+        }
+    }
+    
+    #[test]
+    fn command_scripts_reload_parse_test() {
+        let p1 = commands::scripts_reload();
+        let mut bytes = VecDeque::new();
+        p1.encode_into(&mut bytes).unwrap();
+        let p2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+    
+        assert_eq!(p1, p2); 
+    }
+    
+    #[test]
+    fn command_scripts_root_path_parse_test() {
+        let p1 = commands::scripts_root_path();
+        let mut bytes = VecDeque::new();
+        p1.encode_into(&mut bytes).unwrap();
+        let p2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+    
+        assert_eq!(p1, p2); 
+    }
+    
+    #[test]
+    fn command_scripts_execute_parse_test() {
+        let p1 = commands::scripts_execute("additem('Aerondight', 1)".to_owned());
+        let mut bytes = VecDeque::new();
+        p1.encode_into(&mut bytes).unwrap();
+        let p2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+    
+        assert_eq!(p1, p2); 
+    }
+    
+    #[test]
+    fn command_mod_list_parse_test() {
+        let p1 = commands::mod_list();
+        let mut bytes = VecDeque::new();
+        p1.encode_into(&mut bytes).unwrap();
+        let p2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+    
+        assert_eq!(p1, p2); 
+    }
+    
+    #[test]
+    fn command_opcode_parse_test() {
+        let p1 = commands::opcode("GetPlayerWitcher".to_owned(), None);
+        let mut bytes = VecDeque::new();
+        p1.encode_into(&mut bytes).unwrap();
+        let p2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+    
+        assert_eq!(p1, p2); 
+        
+        
+        let p1 = commands::opcode("onSpawned".to_owned(), Some("CR4Player".to_owned()));
+        let mut bytes = VecDeque::new();
+        p1.encode_into(&mut bytes).unwrap();
+        let p2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+    
+        assert_eq!(p1, p2); 
+    }
+    
+    #[test]
+    fn command_var_list_parse_test() {
+        let p1 = commands::var_list(None, None);
+        let mut bytes = VecDeque::new();
+        p1.encode_into(&mut bytes).unwrap();
+        let p2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+    
+        assert_eq!(p1, p2); 
+        
+        
+        let p1 = commands::var_list(Some("VarSection".to_owned()), None);
+        let mut bytes = VecDeque::new();
+        p1.encode_into(&mut bytes).unwrap();
+        let p2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+    
+        assert_eq!(p1, p2); 
+    
+    
+        let p1 = commands::var_list(None, Some("VarName".to_owned()));
+        let mut bytes = VecDeque::new();
+        p1.encode_into(&mut bytes).unwrap();
+        let p2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+    
+        assert_eq!(p1, p2); 
+    
+    
+        let p1 = commands::var_list(Some("VarSection".to_owned()), Some("VarName".to_owned()));
+        let mut bytes = VecDeque::new();
+        p1.encode_into(&mut bytes).unwrap();
+        let p2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+    
+        assert_eq!(p1, p2); 
+    }
+    
+    #[test]
+    fn command_var_set_parse_test() {
+        let p1 = commands::var_set("VarSection".to_owned(), "VarName".to_owned(), "false".to_owned());
+        let mut bytes = VecDeque::new();
+        p1.encode_into(&mut bytes).unwrap();
+        let p2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+    
+        assert_eq!(p1, p2); 
+    }
+}

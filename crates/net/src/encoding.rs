@@ -429,3 +429,99 @@ where T: std::fmt::Display {
         self.inner.fmt(f)
     }
 }
+
+
+
+
+
+#[cfg(test)]
+mod tests {
+    use std::collections::VecDeque;
+
+    use super::*;
+
+
+    #[test]
+    fn int8_encoding_test() {
+        let data = 18i8;
+        let mut bytes = VecDeque::new();
+        data.encode_into(&mut bytes).unwrap();
+        let decoded = i8::decode_from(&mut bytes).unwrap();
+        let bytes_read = decoded.encoded_size();
+    
+        assert_eq!(decoded, data);
+        assert_eq!(bytes_read, 1);
+    }
+    
+    #[test]
+    fn int16_encoding_test() {
+        let data = 25564i16;
+        let mut bytes = VecDeque::new();
+        data.encode_into(&mut bytes).unwrap();
+        let decoded = i16::decode_from(&mut bytes).unwrap();
+        let bytes_read = decoded.encoded_size();
+    
+        assert_eq!(decoded, data);
+        assert_eq!(bytes_read, 2);
+    }
+    
+    #[test]
+    fn int32_encoding_test() {
+        let data = 912739132i32;
+        let mut bytes = VecDeque::new();
+        data.encode_into(&mut bytes).unwrap();
+        let decoded = i32::decode_from(&mut bytes).unwrap();
+        let bytes_read = decoded.encoded_size();
+    
+        assert_eq!(decoded, data);
+        assert_eq!(bytes_read, 4);
+    }
+    
+    #[test]
+    fn uint32_encoding_test() {
+        let data = 912739132u32;
+        let mut bytes = VecDeque::new();
+        data.encode_into(&mut bytes).unwrap();
+        let decoded = u32::decode_from(&mut bytes).unwrap();
+        let bytes_read = decoded.encoded_size();
+    
+        assert_eq!(decoded, data);
+        assert_eq!(bytes_read, 4);
+    }
+    
+    #[test]
+    fn int64_encoding_test() {
+        let data = -31742921364135i64;
+        let mut bytes = VecDeque::new();
+        data.encode_into(&mut bytes).unwrap();
+        let decoded = i64::decode_from(&mut bytes).unwrap();
+        let bytes_read = decoded.encoded_size();
+    
+        assert_eq!(decoded, data);
+        assert_eq!(bytes_read, 8);
+    }
+    
+    #[test]
+    fn string_utf8_encoding_test() {
+        let data = StringUtf8::from("Gaderypoluki");
+        let mut bytes = VecDeque::new();
+        data.encode_into(&mut bytes).unwrap();
+        let decoded = StringUtf8::decode_from(&mut bytes).unwrap();
+        let bytes_read = decoded.encoded_size();
+    
+        assert_eq!(decoded, data);
+        assert_eq!(bytes_read, 16);
+    }
+    
+    #[test]
+    fn string_utf16_encoding_test() {
+        let data = StringUtf16::from("Zażółć gęślą jaźń");
+        let mut bytes = VecDeque::new();
+        data.encode_into(&mut bytes).unwrap();
+        let decoded = StringUtf16::decode_from(&mut bytes).unwrap();
+        let bytes_read = decoded.encoded_size();
+    
+        assert_eq!(decoded, data);
+        assert_eq!(bytes_read, 38);
+    }
+}

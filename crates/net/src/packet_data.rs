@@ -172,3 +172,99 @@ impl std::fmt::Display for WitcherPacketData {
         }
     }
 }
+
+
+
+
+
+#[cfg(test)]
+mod tests {
+    use std::collections::VecDeque;
+
+    use crate::{encoding::*, packet_data::WitcherPacketData};
+
+    #[test]
+    fn packet_data_int8_parse_test() {
+        let i = WitcherPacketData::new_int8(18i8);
+        let mut bytes = VecDeque::new();
+        i.encode_into(&mut bytes).unwrap();
+        let packet = WitcherPacketData::decode_from(&mut bytes).unwrap();
+        let bytes_read = packet.encoded_size();
+    
+        assert_eq!(packet, i);
+        assert_eq!(bytes_read, 3);
+    }
+    
+    #[test]
+    fn packet_data_int16_parse_test() {
+        let i = WitcherPacketData::new_int16(25564i16);
+        let mut bytes = VecDeque::new();
+        i.encode_into(&mut bytes).unwrap();
+        let packet = WitcherPacketData::decode_from(&mut bytes).unwrap();
+        let bytes_read = packet.encoded_size();
+    
+        assert_eq!(packet, i);
+        assert_eq!(bytes_read, 4);
+    }
+    
+    #[test]
+    fn packet_data_int32_parse_test() {
+        let i = WitcherPacketData::new_int32(912739132i32);
+        let mut bytes = VecDeque::new();
+        i.encode_into(&mut bytes).unwrap();
+        let packet = WitcherPacketData::decode_from(&mut bytes).unwrap();
+        let bytes_read = packet.encoded_size();
+    
+        assert_eq!(packet, i);
+        assert_eq!(bytes_read, 6);
+    }
+    
+    #[test]
+    fn packet_data_uint32_parse_test() {
+        let i = WitcherPacketData::new_uint32(912739132u32);
+        let mut bytes = VecDeque::new();
+        i.encode_into(&mut bytes).unwrap();
+        let packet = WitcherPacketData::decode_from(&mut bytes).unwrap();
+        let bytes_read = packet.encoded_size();
+    
+        assert_eq!(packet, i);
+        assert_eq!(bytes_read, 6);
+    }
+    
+    #[test]
+    fn packet_data_int64_parse_test() {
+        let i = WitcherPacketData::new_int64(-31742921364135i64);
+        let mut bytes = VecDeque::new();
+        i.encode_into(&mut bytes).unwrap();
+        let packet = WitcherPacketData::decode_from(&mut bytes).unwrap();
+        let bytes_read = packet.encoded_size();
+    
+        assert_eq!(packet, i);
+        assert_eq!(bytes_read, 10);
+    }
+    
+    #[test]
+    fn packet_data_string_utf8_parse_test() {
+        let i = WitcherPacketData::new_string_utf8("Gaderypoluki".into());
+        let mut bytes = VecDeque::new();
+        i.encode_into(&mut bytes).unwrap();
+        let packet = WitcherPacketData::decode_from(&mut bytes).unwrap();
+        let bytes_read = packet.encoded_size();
+    
+        assert_eq!(packet, i);
+        assert_eq!(bytes_read, 18);
+    }
+    
+    #[test]
+    fn packet_data_string_utf16_parse_test() {
+        let i = WitcherPacketData::new_string_utf16("Zażółć gęślą jaźń".into());
+        let mut bytes = VecDeque::new();
+        i.encode_into(&mut bytes).unwrap();
+        let packet = WitcherPacketData::decode_from(&mut bytes).unwrap();
+        let bytes_read = packet.encoded_size();
+    
+        assert_eq!(packet, i);
+        assert_eq!(bytes_read, 40);
+    }
+    
+}
