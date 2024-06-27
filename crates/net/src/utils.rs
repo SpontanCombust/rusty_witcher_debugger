@@ -1,4 +1,4 @@
-use crate::{packet::WitcherPacket, packet_data::WitcherPacketData};
+use crate::protocol::*;
 
 
 pub type ResponseFormatter = fn(&WitcherPacket) -> String;

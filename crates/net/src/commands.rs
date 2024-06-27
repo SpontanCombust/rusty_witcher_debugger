@@ -1,4 +1,4 @@
-use crate::packet::WitcherPacket;
+use crate::protocol::WitcherPacket;
 use crate::constants;
 
 /// Listen to game messages coming from given namespace
@@ -104,7 +104,7 @@ pub fn var_set(section: String, name: String, value: String) -> WitcherPacket {
 mod tests {
     use std::collections::VecDeque;
 
-    use crate::{commands, encoding::*, packet::WitcherPacket};
+    use crate::{commands, protocol::*};
     
     
     #[test]

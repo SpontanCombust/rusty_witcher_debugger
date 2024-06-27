@@ -1,8 +1,9 @@
 use std::{net::{IpAddr, SocketAddr, TcpStream}, time::Duration};
 
-use crate::{encoding::{Decode, Encode}, packet::WitcherPacket};
+use crate::protocol::*;
 
 
+#[derive(Debug)]
 pub struct WitcherConnection {
     stream: TcpStream
 }
@@ -25,6 +26,14 @@ impl WitcherConnection {
 
         Ok(Self {
             stream
+        })
+    }
+
+    pub fn try_clone(&self) -> anyhow::Result<Self> {
+        let cloned_stream = self.stream.try_clone()?;
+
+        Ok(Self {
+            stream: cloned_stream
         })
     }
 

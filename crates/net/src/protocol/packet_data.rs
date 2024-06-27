@@ -1,10 +1,10 @@
 use anyhow::Context;
 
-use crate::encoding::*;
+use super::encoding::*;
 
 
 #[derive(Clone, PartialEq, Eq)]
-pub(crate) enum WitcherPacketData {
+pub enum WitcherPacketData {
     Int8(Tagged<i8>),
     Int16(Tagged<i16>),
     Int32(Tagged<i32>),
@@ -181,7 +181,7 @@ impl std::fmt::Display for WitcherPacketData {
 mod tests {
     use std::collections::VecDeque;
 
-    use crate::{encoding::*, packet_data::WitcherPacketData};
+    use crate::protocol::{encoding::*, packet_data::WitcherPacketData};
 
     #[test]
     fn packet_data_int8_parse_test() {

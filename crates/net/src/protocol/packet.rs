@@ -2,8 +2,8 @@ use std::io::Read;
 
 use anyhow::{bail, Context};
 
-use crate::encoding::{ConstSizedEncode, Decode, DynSizedEncode, Encode};
-use crate::packet_data::WitcherPacketData;
+use super::encoding::*;
+use super::packet_data::WitcherPacketData;
 
 
 #[derive(Default, Clone, PartialEq, Eq)]
