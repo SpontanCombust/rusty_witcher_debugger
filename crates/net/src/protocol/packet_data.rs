@@ -4,12 +4,12 @@ use strum_macros::EnumTryAs;
 use super::encoding::*;
 
 
-#[derive(Clone, PartialEq, Eq, Hash, EnumTryAs)]
+#[derive(Clone, PartialEq, Eq, PartialOrd, Ord, Hash, EnumTryAs)]
 pub enum WitcherPacketData {
     Int8(Tagged<i8>),
     Int16(Tagged<i16>),
     Int32(Tagged<i32>),
-    UInt32(Tagged<u32>),
+    Uint32(Tagged<u32>),
     Int64(Tagged<i64>),
     StringUTF8(Tagged<StringUtf8>),
     StringUTF16(Tagged<StringUtf16>),
@@ -31,7 +31,7 @@ impl WitcherPacketData {
     }
 
     pub fn new_uint32(n: u32) -> Self {
-        Self::UInt32(Tagged::new(n))
+        Self::Uint32(Tagged::new(n))
     }
 
     pub fn new_int64(n: i64) -> Self {
@@ -57,7 +57,7 @@ impl Encode for WitcherPacketData {
             WitcherPacketData::Int8(d) => d.encode_into(stream),
             WitcherPacketData::Int16(d) => d.encode_into(stream),
             WitcherPacketData::Int32(d) => d.encode_into(stream),
-            WitcherPacketData::UInt32(d) => d.encode_into(stream),
+            WitcherPacketData::Uint32(d) => d.encode_into(stream),
             WitcherPacketData::Int64(d) => d.encode_into(stream),
             WitcherPacketData::StringUTF8(d) => d.encode_into(stream),
             WitcherPacketData::StringUTF16(d) => d.encode_into(stream),
@@ -72,7 +72,7 @@ impl DynSizedEncode for WitcherPacketData {
             WitcherPacketData::Int8(d) => d.encoded_size(),
             WitcherPacketData::Int16(d) => d.encoded_size(),
             WitcherPacketData::Int32(d) => d.encoded_size(),
-            WitcherPacketData::UInt32(d) => d.encoded_size(),
+            WitcherPacketData::Uint32(d) => d.encoded_size(),
             WitcherPacketData::Int64(d) => d.encoded_size(),
             WitcherPacketData::StringUTF8(d) => d.encoded_size(),
             WitcherPacketData::StringUTF16(d) => d.encoded_size(),
@@ -134,8 +134,8 @@ impl std::fmt::Debug for WitcherPacketData {
             Self::Int32(i) => {
                 write!(f, "Type: Int32\nValue: {}", i)
             }
-            Self::UInt32(i) => {
-                write!(f, "Type: UInt32\nValue: {}", i)
+            Self::Uint32(i) => {
+                write!(f, "Type: Uint32\nValue: {}", i)
             }
             Self::Int64(i) => {
                 write!(f, "Type: Int64\nValue: {}", i)
@@ -159,7 +159,7 @@ impl std::fmt::Display for WitcherPacketData {
             Self::Int8(i) => format!("{}", i),
             Self::Int16(i) => format!("{}", i),
             Self::Int32(i) => format!("{}", i),
-            Self::UInt32(i) => format!("{}", i),
+            Self::Uint32(i) => format!("{}", i),
             Self::Int64(i) => format!("{}", i),
             Self::StringUTF8(s) => format!("{}", s),
             Self::StringUTF16(s) => format!("{}", s),
