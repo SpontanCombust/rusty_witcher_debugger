@@ -7,8 +7,10 @@ use super::{Message, WitcherNamespace};
 
 
 pub trait Request: Message {
-    type Response: Message;
+    type Response: Response;
 }
+
+pub trait Response: Message {}
 
 
 #[derive(Debug)]
@@ -51,6 +53,8 @@ impl Message for ScriptsRootPathResponse {
     type Id = ScriptsRootPathResponseId;
     type Body = ScriptsRootPathResult;
 }
+
+impl Response for ScriptsRootPathResponse {}
 
 
 #[derive(Debug, Default)]
@@ -164,6 +168,8 @@ impl Message for ExecuteCommandResponse {
     type Id = ExecuteCommandResponseId;
     type Body = ExecuteCommandResult;
 }
+
+impl Response for ExecuteCommandResponse {}
 
 
 #[derive(Debug, Default)]
@@ -292,6 +298,8 @@ impl Message for ScriptPackagesResponse {
     type Id = ScriptPackagesResponseId;
     type Body = ScriptPackagesResult;
 }
+
+impl Response for ScriptPackagesResponse {}
 
 
 #[derive(Debug, Default)]
@@ -441,6 +449,8 @@ impl Message for OpcodesResponse {
     type Id = OpcodesResponseId;
     type Body = OpcodesResult;
 }
+
+impl Response for OpcodesResponse {}
 
 
 #[derive(Debug, Default)]
@@ -594,6 +604,8 @@ impl Message for ConfigVarsResponse {
     type Id = ConfigVarsResponseId;
     type Body = ConfigVarsResult;
 }
+
+impl Response for ConfigVarsResponse {}
 
 
 #[derive(Debug, Default)]
