@@ -1,4 +1,5 @@
 mod common;
+use anyhow::Context;
 pub use common::*;
 
 pub mod requests;
@@ -10,18 +11,25 @@ use crate::protocol::*;
 
 /// An abstraction over data sent to and from the game
 pub trait Message: Sized {
-    /// Some fixed data at the start of payload that can identify a specific kind of message
-    fn assemble_payload_header(asm: WitcherPacketAssembler) -> WitcherPacketAssembler;
+    type Header: AssemblePayload + DisassemblePayload + Default;
+    type Body: AssemblePayload + DisassemblePayload;
 
-    fn id() -> MessageId {
-        let header = Self::assemble_payload_header(WitcherPacketAssembler::new())
-            .finish_as_payload();
+    fn assemble_packet(body: Self::Body) -> WitcherPacket {
+        let mut asm = WitcherPacketAssembler::new();
 
-        MessageId { header }
+        let header = Self::Header::default();
+        asm = header.assemble_payload(asm);
+        asm = body.assemble_payload(asm);
+
+        asm.finish()
     }
-}
 
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub struct MessageId {
-    header: Vec<WitcherPacketData>
+    fn disassemble_packet(packet: WitcherPacket) -> anyhow::Result<Self::Body> {
+        let mut dasm = WitcherPacketDisassembler::new(packet);
+
+        Self::Header::disassemble_payload(&mut dasm).context("Invalid or unknown packet header")?;
+        let body = Self::Body::disassemble_payload(&mut dasm).context("Invalid or unknown packet body")?;
+
+        Ok(body)
+    }
 }

@@ -1,4 +1,4 @@
-use std::io::{Write, Read};
+use std::{borrow::Cow, io::{Read, Write}};
 
 use anyhow::{bail, Context};
 use shrinkwraprs::Shrinkwrap;
@@ -258,6 +258,12 @@ impl From<&str> for StringUtf8 {
     }
 }
 
+impl From<Cow<'_, str>> for StringUtf8 {
+    fn from(value: Cow<'_, str>) -> Self {
+        Self(value.into_owned())
+    }
+}
+
 
 
 #[derive(Shrinkwrap, Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Hash)]
@@ -336,6 +342,12 @@ impl From<String> for StringUtf16 {
 impl From<&str> for StringUtf16 {
     fn from(value: &str) -> Self {
         Self(value.to_string())
+    }
+}
+
+impl From<Cow<'_, str>> for StringUtf16 {
+    fn from(value: Cow<'_, str>) -> Self {
+        Self(value.into_owned())
     }
 }
 

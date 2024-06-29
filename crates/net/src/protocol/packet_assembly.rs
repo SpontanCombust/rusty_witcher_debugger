@@ -1,4 +1,4 @@
-use anyhow::Context;
+use anyhow::{bail, Context};
 
 use super::{StringUtf16, StringUtf8, WitcherPacket, WitcherPacketData};
 
@@ -80,12 +80,12 @@ pub struct WitcherPacketDisassembler {
 
 impl WitcherPacketDisassembler {
     #[inline]
-    pub fn new(mut payload: Vec<WitcherPacketData>) -> Self {
-        // reverse now so we can just do pop() later
-        payload.reverse();
+    pub fn new(mut packet: WitcherPacket) -> Self {
+        // reverse now so we can just do pop() on the vec later
+        packet.payload.reverse();
 
         Self {
-            payload_rev: payload
+            payload_rev: packet.payload
         }
     }
 
@@ -95,8 +95,28 @@ impl WitcherPacketDisassembler {
     }
 
     #[inline]
+    pub fn fixed_int8(&mut self, expected: i8) -> anyhow::Result<i8> {
+        let data = self.pop()?.try_as_int_8().map(|t| t.into_inner()).context("Type mismatch")?;
+        if data != expected {
+            bail!("Failed to match expected data: {expected}");
+        }
+
+        Ok(data)
+    }
+
+    #[inline]
     pub fn int16(&mut self) -> anyhow::Result<i16> {
         self.pop()?.try_as_int_16().map(|t| t.into_inner()).context("Type mismatch")
+    }
+
+    #[inline]
+    pub fn fixed_int16(&mut self, expected: i16) -> anyhow::Result<i16> {
+        let data = self.pop()?.try_as_int_16().map(|t| t.into_inner()).context("Type mismatch")?;
+        if data != expected {
+            bail!("Failed to match expected data: {expected}");
+        }
+
+        Ok(data)
     }
 
     #[inline]
@@ -105,8 +125,28 @@ impl WitcherPacketDisassembler {
     }
 
     #[inline]
+    pub fn fixed_int32(&mut self, expected: i32) -> anyhow::Result<i32> {
+        let data = self.pop()?.try_as_int_32().map(|t| t.into_inner()).context("Type mismatch")?;
+        if data != expected {
+            bail!("Failed to match expected data: {expected}");
+        }
+
+        Ok(data)
+    }
+
+    #[inline]
     pub fn uint32(&mut self) -> anyhow::Result<u32> {
         self.pop()?.try_as_uint_32().map(|t| t.into_inner()).context("Type mismatch")
+    }
+
+    #[inline]
+    pub fn fixed_uint32(&mut self, expected: u32) -> anyhow::Result<u32> {
+        let data = self.pop()?.try_as_uint_32().map(|t| t.into_inner()).context("Type mismatch")?;
+        if data != expected {
+            bail!("Failed to match expected data: {expected}");
+        }
+
+        Ok(data)
     }
 
     #[inline]
@@ -115,13 +155,43 @@ impl WitcherPacketDisassembler {
     }
 
     #[inline]
+    pub fn fixed_int64(&mut self, expected: i64) -> anyhow::Result<i64> {
+        let data = self.pop()?.try_as_int_64().map(|t| t.into_inner()).context("Type mismatch")?;
+        if data != expected {
+            bail!("Failed to match expected data: {expected}");
+        }
+
+        Ok(data)
+    }
+
+    #[inline]
     pub fn string_utf8(&mut self) -> anyhow::Result<StringUtf8> {
         self.pop()?.try_as_string_utf_8().map(|t| t.into_inner()).context("Type mismatch")
     }
 
     #[inline]
+    pub fn fixed_string_utf8(&mut self, expected: &str) -> anyhow::Result<StringUtf8> {
+        let data = self.pop()?.try_as_string_utf_8().map(|t| t.into_inner()).context("Type mismatch")?;
+        if data.as_str() != expected {
+            bail!("Failed to match expected data: {expected}");
+        }
+
+        Ok(data)
+    }
+
+    #[inline]
     pub fn string_utf16(&mut self) -> anyhow::Result<StringUtf16> {
         self.pop()?.try_as_string_utf_16().map(|t| t.into_inner()).context("Type mismatch")
+    }
+
+    #[inline]
+    pub fn fixed_string_utf16(&mut self, expected: &str) -> anyhow::Result<StringUtf16> {
+        let data = self.pop()?.try_as_string_utf_16().map(|t| t.into_inner()).context("Type mismatch")?;
+        if data.as_str() != expected {
+            bail!("Failed to match expected data: {expected}");
+        }
+
+        Ok(data)
     }
 
     #[inline]
