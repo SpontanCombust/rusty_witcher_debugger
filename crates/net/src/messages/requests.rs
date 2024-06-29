@@ -6,26 +6,35 @@ use crate::protocol::*;
 use super::{Message, WitcherNamespace};
 
 
+pub trait Request: Message {
+    type Response: Message;
+}
+
+
 #[derive(Debug)]
 pub struct ScriptsRootPath;
 
 impl Message for ScriptsRootPath {
-    type Header = ScriptsRootPathHeader;
+    type Id = ScriptsRootPathId;
     type Body = ();
+}
+
+impl Request for ScriptsRootPath {
+    type Response = ScriptsRootPathResponse;
 }
 
 
 #[derive(Debug, Default)]
-pub struct ScriptsRootPathHeader;
+pub struct ScriptsRootPathId;
 
-impl AssemblePayload for ScriptsRootPathHeader {
+impl AssemblePayload for ScriptsRootPathId {
     fn assemble_payload(self, asm: WitcherPacketAssembler) -> WitcherPacketAssembler {
         asm.string_utf8(WitcherNamespace::ScriptCompiler.as_ref())
             .string_utf8("RootPath")
     }
 }
 
-impl DisassemblePayload for ScriptsRootPathHeader {
+impl DisassemblePayload for ScriptsRootPathId {
     fn disassemble_payload(dasm: &mut WitcherPacketDisassembler) -> anyhow::Result<Self> {
         dasm.fixed_string_utf8(WitcherNamespace::ScriptCompiler.as_ref())?;
         dasm.fixed_string_utf8("RootPath")?;
@@ -39,22 +48,22 @@ impl DisassemblePayload for ScriptsRootPathHeader {
 pub struct ScriptsRootPathResponse;
 
 impl Message for ScriptsRootPathResponse {
-    type Header = ScriptsRootPathResponseHeader;
+    type Id = ScriptsRootPathResponseId;
     type Body = ScriptsRootPathResult;
 }
 
 
 #[derive(Debug, Default)]
-pub struct ScriptsRootPathResponseHeader;
+pub struct ScriptsRootPathResponseId;
 
-impl AssemblePayload for ScriptsRootPathResponseHeader {
+impl AssemblePayload for ScriptsRootPathResponseId {
     fn assemble_payload(self, asm: WitcherPacketAssembler) -> WitcherPacketAssembler {
         asm.string_utf8(WitcherNamespace::ScriptCompiler.as_ref())
             .string_utf8("RootPathConfirm")
     }
 }
 
-impl DisassemblePayload for ScriptsRootPathResponseHeader {
+impl DisassemblePayload for ScriptsRootPathResponseId {
     fn disassemble_payload(dasm: &mut WitcherPacketDisassembler) -> anyhow::Result<Self> {
         dasm.fixed_string_utf8(WitcherNamespace::ScriptCompiler.as_ref())?;
         dasm.fixed_string_utf8("RootPathConfirm")?;
@@ -93,15 +102,19 @@ impl DisassemblePayload for ScriptsRootPathResult {
 pub struct ExecuteCommand;
 
 impl Message for ExecuteCommand {
-    type Header = ExecuteCommandHeader;
+    type Id = ExecuteCommandId;
     type Body = ExecuteCommandParams;
+}
+
+impl Request for ExecuteCommand {
+    type Response = ExecuteCommandResponse;
 }
 
 
 #[derive(Debug, Default)]
-pub struct ExecuteCommandHeader;
+pub struct ExecuteCommandId;
 
-impl AssemblePayload for ExecuteCommandHeader {
+impl AssemblePayload for ExecuteCommandId {
     #[allow(overflowing_literals)]
     fn assemble_payload(self, asm: WitcherPacketAssembler) -> WitcherPacketAssembler {
         asm.string_utf8(WitcherNamespace::Remote.as_ref())
@@ -110,7 +123,7 @@ impl AssemblePayload for ExecuteCommandHeader {
     }
 }
 
-impl DisassemblePayload for ExecuteCommandHeader {
+impl DisassemblePayload for ExecuteCommandId {
     #[allow(overflowing_literals)]
     fn disassemble_payload(dasm: &mut WitcherPacketDisassembler) -> anyhow::Result<Self> {
         dasm.fixed_string_utf8(WitcherNamespace::Remote.as_ref())?;
@@ -148,15 +161,15 @@ impl DisassemblePayload for ExecuteCommandParams {
 pub struct ExecuteCommandResponse;
 
 impl Message for ExecuteCommandResponse {
-    type Header = ExecuteCommandResponseHeader;
+    type Id = ExecuteCommandResponseId;
     type Body = ExecuteCommandResult;
 }
 
 
 #[derive(Debug, Default)]
-pub struct ExecuteCommandResponseHeader;
+pub struct ExecuteCommandResponseId;
 
-impl AssemblePayload for ExecuteCommandResponseHeader {
+impl AssemblePayload for ExecuteCommandResponseId {
     #[allow(overflowing_literals)]
     fn assemble_payload(self, asm: WitcherPacketAssembler) -> WitcherPacketAssembler {
         asm.int32(0x12345678)
@@ -164,7 +177,7 @@ impl AssemblePayload for ExecuteCommandResponseHeader {
     }
 }
 
-impl DisassemblePayload for ExecuteCommandResponseHeader {
+impl DisassemblePayload for ExecuteCommandResponseId {
     #[allow(overflowing_literals)]
     fn disassemble_payload(dasm: &mut WitcherPacketDisassembler) -> anyhow::Result<Self> {
         dasm.fixed_int32(0x12345678)?;
@@ -243,22 +256,26 @@ impl DisassemblePayload for ExecuteCommandResult {
 pub struct ScriptPackages;
 
 impl Message for ScriptPackages {
-    type Header = ScriptPackagesHeader;
+    type Id = ScriptPackagesId;
     type Body = ();
+}
+
+impl Request for ScriptPackages {
+    type Response = ScriptPackagesResponse;
 }
 
 
 #[derive(Debug, Default)]
-pub struct ScriptPackagesHeader;
+pub struct ScriptPackagesId;
 
-impl AssemblePayload for ScriptPackagesHeader {
+impl AssemblePayload for ScriptPackagesId {
     fn assemble_payload(self, asm: WitcherPacketAssembler) -> WitcherPacketAssembler {
         asm.string_utf8(WitcherNamespace::Scripts.as_ref())
             .string_utf8("pkgSync")
     }
 }
 
-impl DisassemblePayload for ScriptPackagesHeader {
+impl DisassemblePayload for ScriptPackagesId {
     fn disassemble_payload(dasm: &mut WitcherPacketDisassembler) -> anyhow::Result<Self> {
         dasm.fixed_string_utf8(WitcherNamespace::Scripts.as_ref())?;
         dasm.fixed_string_utf8("pkgSync")?;
@@ -272,22 +289,22 @@ impl DisassemblePayload for ScriptPackagesHeader {
 pub struct ScriptPackagesResponse;
 
 impl Message for ScriptPackagesResponse {
-    type Header = ScriptPackagesResponseHeader;
+    type Id = ScriptPackagesResponseId;
     type Body = ScriptPackagesResult;
 }
 
 
 #[derive(Debug, Default)]
-pub struct ScriptPackagesResponseHeader;
+pub struct ScriptPackagesResponseId;
 
-impl AssemblePayload for ScriptPackagesResponseHeader {
+impl AssemblePayload for ScriptPackagesResponseId {
     fn assemble_payload(self, asm: WitcherPacketAssembler) -> WitcherPacketAssembler {
         asm.string_utf8(WitcherNamespace::Scripts.as_ref())
             .string_utf8("pkgSyncListing")
     }
 }
 
-impl DisassemblePayload for ScriptPackagesResponseHeader {
+impl DisassemblePayload for ScriptPackagesResponseId {
     fn disassemble_payload(dasm: &mut WitcherPacketDisassembler) -> anyhow::Result<Self> {
         dasm.fixed_string_utf8(WitcherNamespace::Scripts.as_ref())?;
         dasm.fixed_string_utf8("pkgSyncListing")?;
@@ -349,22 +366,26 @@ impl DisassemblePayload for ScriptPackagesResult {
 pub struct Opcodes;
 
 impl Message for Opcodes {
-    type Header = OpcodesHeader;
+    type Id = OpcodesId;
     type Body = OpcodesParams;
+}
+
+impl Request for Opcodes {
+    type Response = OpcodesResponse;
 }
 
 
 #[derive(Debug, Default)]
-pub struct OpcodesHeader;
+pub struct OpcodesId;
 
-impl AssemblePayload for OpcodesHeader {
+impl AssemblePayload for OpcodesId {
     fn assemble_payload(self, asm: WitcherPacketAssembler) -> WitcherPacketAssembler {
         asm.string_utf8(WitcherNamespace::ScriptDebugger.as_ref())
             .string_utf8("OpcodeBreakdownRequest")
     }
 }
 
-impl DisassemblePayload for OpcodesHeader {
+impl DisassemblePayload for OpcodesId {
     fn disassemble_payload(dasm: &mut WitcherPacketDisassembler) -> anyhow::Result<Self> {
         dasm.fixed_string_utf8(WitcherNamespace::ScriptDebugger.as_ref())?;
         dasm.fixed_string_utf8("OpcodeBreakdownRequest")?;
@@ -417,22 +438,22 @@ impl DisassemblePayload for OpcodesParams {
 pub struct OpcodesResponse;
 
 impl Message for OpcodesResponse {
-    type Header = OpcodesResponseHeader;
+    type Id = OpcodesResponseId;
     type Body = OpcodesResult;
 }
 
 
 #[derive(Debug, Default)]
-pub struct OpcodesResponseHeader;
+pub struct OpcodesResponseId;
 
-impl AssemblePayload for OpcodesResponseHeader {
+impl AssemblePayload for OpcodesResponseId {
     fn assemble_payload(self, asm: WitcherPacketAssembler) -> WitcherPacketAssembler {
         asm.string_utf8(WitcherNamespace::ScriptDebugger.as_ref())
             .string_utf8("OpcodeBreakdownResponse")
     }
 }
 
-impl DisassemblePayload for OpcodesResponseHeader {
+impl DisassemblePayload for OpcodesResponseId {
     fn disassemble_payload(dasm: &mut WitcherPacketDisassembler) -> anyhow::Result<Self> {
         dasm.fixed_string_utf8(WitcherNamespace::ScriptDebugger.as_ref())?;
         dasm.fixed_string_utf8("OpcodeBreakdownResponse")?;
@@ -504,15 +525,19 @@ impl DisassemblePayload for OpcodesResult {
 pub struct ConfigVars;
 
 impl Message for ConfigVars {
-    type Header = ConfigVarsHeader;
+    type Id = ConfigVarsId;
     type Body = ConfigVarsParams;
+}
+
+impl Request for ConfigVars {
+    type Response = ConfigVarsResponse;
 }
 
 
 #[derive(Debug, Default)]
-pub struct ConfigVarsHeader;
+pub struct ConfigVarsId;
 
-impl AssemblePayload for ConfigVarsHeader {
+impl AssemblePayload for ConfigVarsId {
     #[allow(overflowing_literals)]
     fn assemble_payload(self, asm: WitcherPacketAssembler) -> WitcherPacketAssembler {
         asm.string_utf8(WitcherNamespace::Config.as_ref())
@@ -521,7 +546,7 @@ impl AssemblePayload for ConfigVarsHeader {
     }
 }
 
-impl DisassemblePayload for ConfigVarsHeader {
+impl DisassemblePayload for ConfigVarsId {
     #[allow(overflowing_literals)]
     fn disassemble_payload(dasm: &mut WitcherPacketDisassembler) -> anyhow::Result<Self> {
         dasm.fixed_string_utf8(WitcherNamespace::Config.as_ref())?;
@@ -566,15 +591,15 @@ impl DisassemblePayload for ConfigVarsParams {
 pub struct ConfigVarsResponse;
 
 impl Message for ConfigVarsResponse {
-    type Header = ConfigVarsResponseHeader;
+    type Id = ConfigVarsResponseId;
     type Body = ConfigVarsResult;
 }
 
 
 #[derive(Debug, Default)]
-pub struct ConfigVarsResponseHeader;
+pub struct ConfigVarsResponseId;
 
-impl AssemblePayload for ConfigVarsResponseHeader {
+impl AssemblePayload for ConfigVarsResponseId {
     #[allow(overflowing_literals)]
     fn assemble_payload(self, asm: WitcherPacketAssembler) -> WitcherPacketAssembler {
         asm.int32(0xCC00CC00)
@@ -582,7 +607,7 @@ impl AssemblePayload for ConfigVarsResponseHeader {
     }
 }
 
-impl DisassemblePayload for ConfigVarsResponseHeader {
+impl DisassemblePayload for ConfigVarsResponseId {
     #[allow(overflowing_literals)]
     fn disassemble_payload(dasm: &mut WitcherPacketDisassembler) -> anyhow::Result<Self> {
         dasm.fixed_int32(0xCC00CC00)?;

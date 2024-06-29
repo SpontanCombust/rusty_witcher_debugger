@@ -6,25 +6,30 @@ use crate::protocol::*;
 use super::{Message, WitcherNamespace};
 
 
+pub trait Notification: Message { }
+
+
 #[derive(Debug)]
 pub struct ListenToNamespace;
 
 impl Message for ListenToNamespace {
-    type Header = ListenToNamespaceHeader;
+    type Id = ListenToNamespaceId;
     type Body = ListenToNamespaceParams;
 }
 
+impl Notification for ListenToNamespace {}
+
 
 #[derive(Debug, Default)]
-pub struct ListenToNamespaceHeader;
+pub struct ListenToNamespaceId;
 
-impl AssemblePayload for ListenToNamespaceHeader {
+impl AssemblePayload for ListenToNamespaceId {
     fn assemble_payload(self, asm: WitcherPacketAssembler) -> WitcherPacketAssembler {
         asm.string_utf8("BIND")
     }
 }
 
-impl DisassemblePayload for ListenToNamespaceHeader {
+impl DisassemblePayload for ListenToNamespaceId {
     fn disassemble_payload(dasm: &mut WitcherPacketDisassembler) -> anyhow::Result<Self> {
         dasm.fixed_string_utf8("BIND")?;
         Ok(Self)
@@ -59,22 +64,24 @@ impl DisassemblePayload for ListenToNamespaceParams {
 pub struct ReloadScripts;
 
 impl Message for ReloadScripts {
-    type Header = ReloadScriptsHeader;
+    type Id = ReloadScriptsId;
     type Body = ();
 }
 
+impl Notification for ReloadScripts {}
+
 
 #[derive(Debug, Default)]
-pub struct ReloadScriptsHeader;
+pub struct ReloadScriptsId;
 
-impl AssemblePayload for ReloadScriptsHeader {
+impl AssemblePayload for ReloadScriptsId {
     fn assemble_payload(self, asm: WitcherPacketAssembler) -> WitcherPacketAssembler {
         asm.string_utf8(WitcherNamespace::Scripts.as_ref())
             .string_utf8("reload")
     }
 }
 
-impl DisassemblePayload for ReloadScriptsHeader {
+impl DisassemblePayload for ReloadScriptsId {
     fn disassemble_payload(dasm: &mut WitcherPacketDisassembler) -> anyhow::Result<Self> {
         dasm.fixed_string_utf8(WitcherNamespace::Scripts.as_ref())?;
         dasm.fixed_string_utf8("reload")?;
@@ -90,21 +97,23 @@ impl DisassemblePayload for ReloadScriptsHeader {
 pub struct ScriptsReloadProgress;
 
 impl Message for ScriptsReloadProgress {
-    type Header = ScriptsReloadProgressHeader;
+    type Id = ScriptsReloadProgressId;
     type Body = ScriptsReloadProgressParams;
 }
 
+impl Notification for ScriptsReloadProgress {}
+
 
 #[derive(Debug, Default)]
-pub struct ScriptsReloadProgressHeader;
+pub struct ScriptsReloadProgressId;
 
-impl AssemblePayload for ScriptsReloadProgressHeader {
+impl AssemblePayload for ScriptsReloadProgressId {
     fn assemble_payload(self, asm: WitcherPacketAssembler) -> WitcherPacketAssembler {
         asm.string_utf8(WitcherNamespace::ScriptCompiler.as_ref())
     }
 }
 
-impl DisassemblePayload for ScriptsReloadProgressHeader {
+impl DisassemblePayload for ScriptsReloadProgressId {
     fn disassemble_payload(dasm: &mut WitcherPacketDisassembler) -> anyhow::Result<Self> {
         dasm.fixed_string_utf8(WitcherNamespace::ScriptCompiler.as_ref())?;
         Ok(Self)
