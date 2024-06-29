@@ -3,7 +3,6 @@ use std::path::PathBuf;
 use anyhow::{bail, Context};
 
 use crate::protocol::*;
-
 use super::{Message, WitcherNamespace};
 
 
@@ -49,6 +48,37 @@ impl DisassemblePayload for ListenToNamespaceParams {
         Ok(Self {
             namesp: WitcherNamespace::disassemble_payload(dasm)?
         })
+    }
+}
+
+
+
+
+
+#[derive(Debug)]
+pub struct ReloadScripts;
+
+impl Message for ReloadScripts {
+    type Header = ReloadScriptsHeader;
+    type Body = ();
+}
+
+
+#[derive(Debug, Default)]
+pub struct ReloadScriptsHeader;
+
+impl AssemblePayload for ReloadScriptsHeader {
+    fn assemble_payload(self, asm: WitcherPacketAssembler) -> WitcherPacketAssembler {
+        asm.string_utf8(WitcherNamespace::Scripts.as_ref())
+            .string_utf8("reload")
+    }
+}
+
+impl DisassemblePayload for ReloadScriptsHeader {
+    fn disassemble_payload(dasm: &mut WitcherPacketDisassembler) -> anyhow::Result<Self> {
+        dasm.fixed_string_utf8(WitcherNamespace::Scripts.as_ref())?;
+        dasm.fixed_string_utf8("reload")?;
+        Ok(Self)
     }
 }
 
