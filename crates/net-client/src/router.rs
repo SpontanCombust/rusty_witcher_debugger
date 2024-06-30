@@ -35,7 +35,7 @@ impl Router {
 
     pub fn set_notification_callback<N, F>(&self, callback: F) 
     where N: Notification + Send + Sync + 'static,
-          F: Fn(N::Body) + Send + Sync + 'static {
+          F: FnMut(N::Body) + Send + Sync + 'static {
         
         self.id_registry.lock().unwrap().register_message::<N>();
         let id = N::assemble_id();
@@ -44,7 +44,7 @@ impl Router {
     }
 
     pub fn set_raw_packet_callback<F>(&self, callback: F)
-    where F: Fn(WitcherPacket) + Send + Sync + 'static {
+    where F: FnMut(WitcherPacket) + Send + Sync + 'static {
         let mut raw_handler = self.raw_packet_handler.lock().unwrap();
         *raw_handler = Some(Box::new(RawRouteHandler::new(callback)));
     }
@@ -58,17 +58,17 @@ impl Router {
             if read_conn.peek()? {
                 let packet = read_conn.receive()?;
                 {
-                    let raw_handler = self.raw_packet_handler.lock().unwrap();
-                    if let Some(raw_handler) = &*raw_handler {
+                    let mut raw_handler = self.raw_packet_handler.lock().unwrap();
+                    if let Some(raw_handler) = &mut *raw_handler {
                         raw_handler.accept_packet(packet.clone())?;
                     }
                 }
                 if let Some(id) = self.id_registry.lock().unwrap().probe_message_id(&packet) {
-                    if let Some(nh) = self.notif_handlers.get(&id) {
+                    if let Some(mut nh) = self.notif_handlers.get_mut(&id) {
                         nh.accept_packet(packet)?;
                     }
                     else if let Some(mut rhs) = self.response_handlers.get_mut(&id) {
-                        if let Some(rh) = rhs.pop_front() {
+                        if let Some(mut rh) = rhs.pop_front() {
                             rh.accept_packet(packet)?;
                         }
                     }
@@ -94,7 +94,7 @@ impl std::fmt::Debug for Router {
 
 
 trait RouteHandler {
-    fn accept_packet(&self, packet: WitcherPacket) -> anyhow::Result<()>;
+    fn accept_packet(&mut self, packet: WitcherPacket) -> anyhow::Result<()>;
 }
 
 
@@ -104,7 +104,7 @@ struct NotificationRouteHandler<N, F> {
 }
 
 impl<N, F> NotificationRouteHandler<N, F>
-where N: Notification, F: Fn(N::Body) {
+where N: Notification, F: FnMut(N::Body) {
     fn new(notif_callback: F) -> Self {
         Self {
             notif_callback,
@@ -114,8 +114,8 @@ where N: Notification, F: Fn(N::Body) {
 }
 
 impl<N, F> RouteHandler for NotificationRouteHandler<N, F> 
-where N: Notification, F: Fn(N::Body) {
-    fn accept_packet(&self, packet: WitcherPacket) -> anyhow::Result<()> {
+where N: Notification, F: FnMut(N::Body) {
+    fn accept_packet(&mut self, packet: WitcherPacket) -> anyhow::Result<()> {
         let notif = N::disassemble_packet(packet).context("Notification deserialization error")?;
         (self.notif_callback)(notif);
         Ok(())
@@ -124,7 +124,7 @@ where N: Notification, F: Fn(N::Body) {
 
 
 struct ResponseRouteHandler<R, F> {
-    resp_callback: Mutex<Option<F>>,
+    resp_callback: Option<F>,
     resp_phantom: PhantomData<R>
 }
 
@@ -132,7 +132,7 @@ impl<R, F> ResponseRouteHandler<R, F>
 where R: Response, F: FnOnce(R::Body) {
     fn new(resp_callback: F) -> Self {
         Self {
-            resp_callback: Mutex::new(Some(resp_callback)),
+            resp_callback: Some(resp_callback),
             resp_phantom: PhantomData
         }
     }
@@ -140,9 +140,9 @@ where R: Response, F: FnOnce(R::Body) {
 
 impl<R, F> RouteHandler for ResponseRouteHandler<R, F> 
 where R: Response, F: FnOnce(R::Body) {
-    fn accept_packet(&self, packet: WitcherPacket) -> anyhow::Result<()> {
+    fn accept_packet(&mut self, packet: WitcherPacket) -> anyhow::Result<()> {
         let resp = R::disassemble_packet(packet).context("Response deserialization error")?;
-        if let Some(resp_handler) = self.resp_callback.lock().unwrap().take() {
+        if let Some(resp_handler) = self.resp_callback.take() {
             (resp_handler)(resp);
         }
         Ok(())
@@ -155,7 +155,7 @@ struct RawRouteHandler<F> {
 }
 
 impl<F> RawRouteHandler<F>
-where F: Fn(WitcherPacket) {
+where F: FnMut(WitcherPacket) {
     fn new(raw_packet_callback: F) -> Self {
         Self {
             raw_packet_callback
@@ -164,8 +164,8 @@ where F: Fn(WitcherPacket) {
 }
 
 impl<F> RouteHandler for RawRouteHandler<F>
-where F: Fn(WitcherPacket) {
-    fn accept_packet(&self, packet: WitcherPacket) -> anyhow::Result<()> {
+where F: FnMut(WitcherPacket) {
+    fn accept_packet(&mut self, packet: WitcherPacket) -> anyhow::Result<()> {
         (self.raw_packet_callback)(packet);
         Ok(())
     }

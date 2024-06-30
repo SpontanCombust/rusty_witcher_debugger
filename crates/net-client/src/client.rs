@@ -66,7 +66,7 @@ impl WitcherClient {
     /// The callback will be ivoked on every packet received if it is set.
     #[inline]
     pub fn on_raw_packet<F>(&self, callback: F)
-    where F: Fn(WitcherPacket) + Send + Sync + 'static {
+    where F: FnMut(WitcherPacket) + Send + Sync + 'static {
         self.router.set_raw_packet_callback(callback)
     }
 
@@ -109,13 +109,13 @@ impl WitcherClient {
 
     #[inline]
     pub fn on_scripts_reload_progress<F>(&self, callback: F)
-    where F: Fn(ScriptsReloadProgressParams) + Send + Sync + 'static {
+    where F: FnMut(ScriptsReloadProgressParams) + Send + Sync + 'static {
         self.on_notification::<ScriptsReloadProgress, F>(callback)
     }
 
     #[inline]
     pub fn scripts_root_path(&self) -> anyhow::Result<ScriptsRootPathResult> {
-        self.send_request::<ScriptsRootPath>(())
+        self.send_request::<ScriptsRootPath>(()) //FIXME not working
     }
 
     #[inline]
@@ -124,17 +124,17 @@ impl WitcherClient {
     }
 
     #[inline]
-    pub fn script_packages<F>(&self) -> anyhow::Result<ScriptPackagesResult> {
+    pub fn script_packages(&self) -> anyhow::Result<ScriptPackagesResult> {
         self.send_request::<ScriptPackages>(())
     }
 
     #[inline]
-    pub fn opcodes<F>(&self, params: OpcodesParams) -> anyhow::Result<OpcodesResult> {
+    pub fn opcodes(&self, params: OpcodesParams) -> anyhow::Result<OpcodesResult> {
         self.send_request::<Opcodes>(params)
     }
 
     #[inline]
-    pub fn config_vars<F>(&self, params: ConfigVarsParams) -> anyhow::Result<ConfigVarsResult> {
+    pub fn config_vars(&self, params: ConfigVarsParams) -> anyhow::Result<ConfigVarsResult> {
         self.send_request::<ConfigVars>(params)
     }
 
@@ -163,7 +163,7 @@ impl WitcherClient {
         self.write_conn.lock().unwrap().send(packet)?;
         
         let result = if let Some(timeout) = read_timeout {
-            recv.recv_timeout(timeout)?
+            recv.recv_timeout(timeout).context("Waited too long for the response")?
         } else {
             recv.recv()?
         };
@@ -173,7 +173,7 @@ impl WitcherClient {
 
     fn on_notification<N, F>(&self, callback: F) 
     where N: Notification + Send + Sync + 'static,
-          F: Fn(N::Body) + Send + Sync + 'static {
+          F: FnMut(N::Body) + Send + Sync + 'static {
 
         self.router.set_notification_callback::<N, F>(callback);
     }
