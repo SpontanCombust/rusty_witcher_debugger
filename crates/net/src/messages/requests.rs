@@ -140,7 +140,7 @@ impl DisassemblePayload for ExecuteCommandId {
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ExecuteCommandParams {
-    cmd: String
+    pub cmd: String
 }
 
 impl AssemblePayload for ExecuteCommandParams {
