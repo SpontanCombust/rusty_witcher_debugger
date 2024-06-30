@@ -43,6 +43,11 @@ impl WitcherConnection {
         Ok(())
     }
 
+    pub fn get_read_timeout(&self) -> anyhow::Result<Option<Duration>> {
+        let timeout = self.stream.read_timeout()?;
+        Ok(timeout)
+    }
+
 
     pub fn send(&mut self, packet: WitcherPacket) -> anyhow::Result<()> {
         packet.encode_into(&mut self.stream)?;
