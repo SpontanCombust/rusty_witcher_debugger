@@ -6,18 +6,15 @@ use rw3d_net::{connection::WitcherConnection, messages::*, protocol::WitcherPack
 
 
 pub struct Router {
-    id_registry: MessageIdRegistry,
+    id_registry: Mutex<MessageIdRegistry>,
     response_handlers: DashMap<MessageId, VecDeque<Box<dyn RouteHandler + Send + Sync>>>,
     notif_handlers: DashMap<MessageId, Box<dyn RouteHandler + Send + Sync>>,
 }
 
 impl Router {
     pub fn new() -> Self {
-        let mut id_registry = MessageIdRegistry::new();
-        id_registry.register_server_messages();
-
         Self {
-            id_registry,
+            id_registry: Mutex::new(MessageIdRegistry::new()),
             response_handlers: DashMap::new(),
             notif_handlers: DashMap::new()
         }
@@ -27,6 +24,7 @@ impl Router {
     where R: Response + Send + Sync + 'static,
           F: FnOnce(R::Body) + Send + Sync + 'static {
         
+        self.id_registry.lock().unwrap().register_message::<R>();
         let id = R::assemble_id();
         self.response_handlers.entry(id)
             .or_default()
@@ -37,6 +35,7 @@ impl Router {
     where N: Notification + Send + Sync + 'static,
           F: Fn(N::Body) + Send + Sync + 'static {
         
+        self.id_registry.lock().unwrap().register_message::<N>();
         let id = N::assemble_id();
         self.notif_handlers.entry(id)
             .insert(Box::new(NotificationRouteHandler::<N, F>::new(handler)));
@@ -50,7 +49,7 @@ impl Router {
 
             if read_conn.peek()? {
                 let packet = read_conn.receive()?;
-                if let Some(id) = self.id_registry.probe_message_id(&packet) {
+                if let Some(id) = self.id_registry.lock().unwrap().probe_message_id(&packet) {
                     if let Some(nh) = self.notif_handlers.get(&id) {
                         nh.accept_packet(packet)?;
                     }
