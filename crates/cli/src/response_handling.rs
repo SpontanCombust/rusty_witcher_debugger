@@ -1,36 +1,51 @@
 use colored::Colorize;
-use rw3d_net::protocol::WitcherPacket;
-use rw3d_net::utils::{scripts_execute_formatter, scripts_root_path_formatter, mod_list_formatter, opcode_formatter, var_list_formatter, scripts_reload_formatter, scripts_reload_response_type, ScriptsReloadResponseType};
+use rw3d_net::{messages::{notifications::*, requests::*}, protocol::WitcherPacket};
 
 
-
-pub(crate) trait HandleResponse {
-    fn handle_response(&mut self, response: WitcherPacket, verbose_print: bool);
-    /// Whether the handler has finished the work
-    fn is_done(&self) -> bool;
-    /// Max time for the next response to come in millis
-    /// Used to indicate when the game needs to do some work before sending the response
-    fn response_await_time(&self) -> u64;
+pub fn print_raw_packet(packet: WitcherPacket) {
+    println!("{:?}", packet);
 }
 
 
-
-pub(crate) struct ScriptsReloadPrinter {
-    max_compile_time: u64,
+pub struct ScriptsReloadPrinter {
     warnings: Vec<String>,
-    errors: Vec<String>,
-    is_compiling: bool,
-    has_finished: bool
+    errors: Vec<String>
 }
 
 impl ScriptsReloadPrinter {
-    pub fn new(max_compile_time: u64) -> Self {
+    pub fn new() -> Self {
         ScriptsReloadPrinter {
-            max_compile_time,
             warnings: Vec::new(),
-            errors: Vec::new(),
-            is_compiling: false,
-            has_finished: false,
+            errors: Vec::new()
+        }
+    }
+
+    pub fn print_progress(&mut self, params: ScriptsReloadProgressParams) {
+        match params {
+            ScriptsReloadProgressParams::Started => {
+                println!("Script compilation started...");
+            }
+            ScriptsReloadProgressParams::Log { message } => {
+                println!("{}", message)
+            }
+            ScriptsReloadProgressParams::Warn { line, local_script_path, message } => {
+                println!("[Warning] {}({}): {}", local_script_path.display(), line, message )
+            }
+            ScriptsReloadProgressParams::Error { line, local_script_path, message } => {
+                println!("[Error] {}({}): {}", local_script_path.display(), line, message )
+            }
+            ScriptsReloadProgressParams::Finished { success } => {
+                if success {
+                    println!("Script compilation finished successfully.");
+                } else {
+                    println!("Script compilation finished with errors.");
+                }
+
+                if !self.warnings.is_empty() || !self.errors.is_empty() {
+                    println!();
+                    self.print_summary();
+                }
+            }
         }
     }
 
@@ -51,161 +66,69 @@ impl ScriptsReloadPrinter {
     }
 }
 
-impl HandleResponse for ScriptsReloadPrinter {
-    fn handle_response(&mut self, response: WitcherPacket, verbose_print: bool) {
-        let msg = scripts_reload_formatter(&response);
 
-        if let Ok(response_type) = scripts_reload_response_type(&response) {
-            match response_type {
-                ScriptsReloadResponseType::Started => {
-                    self.has_finished = false;
-                }
-                ScriptsReloadResponseType::Warn {..} => {
-                    self.warnings.push(msg.to_string());
-                }
-                ScriptsReloadResponseType::Error {..} => {
-                    self.errors.push(msg.to_string());
-                }
-                ScriptsReloadResponseType::Finished(_) => {
-                    self.has_finished = true;
-                }
-                ScriptsReloadResponseType::Log(s) => {
-                    self.is_compiling = s.contains("Compiling functions");
-                }
+pub fn print_exec_result(result: ExecuteCommandResult) {
+    match result {
+        ExecuteCommandResult::Success { log_output } => {
+            if let Some(log_output) = log_output {
+                println!("{}", log_output.join("\n"))
+            } else {
+                println!("Command executed successfully")
             }
         }
-
-        if verbose_print {
-            println!("{:?}", response);
-        } else {
-            println!("{}", msg);
-        }
-
-        if self.has_finished && ( !self.warnings.is_empty() || !self.errors.is_empty() ) {
-            println!();
-            self.print_summary();
-        }
-    }
-
-    fn is_done(&self) -> bool {
-        self.has_finished
-    }
-
-    fn response_await_time(&self) -> u64 {
-        if self.is_compiling {
-            self.max_compile_time
-        } else {
-            500
+        ExecuteCommandResult::Fail => {
+            println!("Command failed to execute")
         }
     }
 }
 
 
+pub fn print_root_path_result(result: ScriptsRootPathResult) {
+    println!("{}", result.abs_path.display())
+}
 
-pub(crate) struct ScriptsExecutePrinter();
 
-impl HandleResponse for ScriptsExecutePrinter {
-    fn handle_response(&mut self, response: WitcherPacket, verbose_print: bool) {
-        if verbose_print {
-            println!("{:?}", response);
-        } else {
-            println!("{}", scripts_execute_formatter(&response));
-        }
-    }
+pub fn print_mod_list_result(result: ScriptPackagesResult) {
+    println!("Mods installed: {}", result.packages.len() - 1); // one is always content0
 
-    fn is_done(&self) -> bool {
-        true // only one packet
-    }
+    let mut mods = result.packages.into_iter()
+        .filter(|p| p.package_name != "content0")
+        .map(|p| p.package_name)
+        .collect::<Vec<_>>();
 
-    fn response_await_time(&self) -> u64 {
-        500
+    mods.sort();
+    for m in mods {
+        println!("{}", m);
     }
 }
 
 
-
-pub(crate) struct ScriptsRootpathPrinter();
-
-impl HandleResponse for ScriptsRootpathPrinter {
-    fn handle_response(&mut self, response: WitcherPacket, verbose_print: bool) {
-        if verbose_print {
-            println!("{:?}", response);
-        } else {
-            println!("{}", scripts_root_path_formatter(&response));
+pub fn print_opcodes(result: OpcodesResult) {
+    for breakdown in result.breakdowns {
+        println!("Line {}", breakdown.line);
+        println!("Opcodes: ");
+        for opcode in breakdown.opcodes {
+            println!("{}", opcode);
         }
-    }
-
-    fn is_done(&self) -> bool {
-        true // only one packet
-    }
-
-    fn response_await_time(&self) -> u64 {
-        500
     }
 }
 
 
+pub fn print_var_list(result: ConfigVarsResult) {
+    let tab_line = format!("{}+-{}+-{}", "-".repeat(40), "-".repeat(45), "-".repeat(40) );
+    println!("{}", tab_line);
+    println!("{:40}| {:45}| {}", "Section", "Variable", "Value");
+    println!("{}", tab_line);
 
-pub(crate) struct ModlistPrinter();
-
-impl HandleResponse for ModlistPrinter {
-    fn handle_response(&mut self, response: WitcherPacket, verbose_print: bool) {
-        if verbose_print {
-            println!("{:?}", response);
-        } else {
-            println!("{}", mod_list_formatter(&response));
+    let mut vars = result.vars;
+    vars.sort_by(|v1, v2| {
+        match v1.section.cmp(&v2.section) {
+            std::cmp::Ordering::Equal => v1.name.cmp(&v2.name),
+            other => other
         }
-    }
+    });
 
-    fn is_done(&self) -> bool {
-        true // only one packet
-    }
-
-    fn response_await_time(&self) -> u64 {
-        500
-    }
-}
-
-
-
-pub(crate) struct OpcodePrinter();
-
-impl HandleResponse for OpcodePrinter {
-    fn handle_response(&mut self, response: WitcherPacket, verbose_print: bool) {
-        if verbose_print {
-            println!("{:?}", response);
-        } else {
-            println!("{}", opcode_formatter(&response));
-        }
-    }
-
-    fn is_done(&self) -> bool {
-        true // only one packet
-    }
-
-    fn response_await_time(&self) -> u64 {
-        500
-    }
-}
-
-
-
-pub(crate) struct VarlistPrinter();
-
-impl HandleResponse for VarlistPrinter {
-    fn handle_response(&mut self, response: WitcherPacket, verbose_print: bool) {
-        if verbose_print {
-            println!("{:?}", response);
-        } else {
-            println!("{}", var_list_formatter(&response));
-        }
-    }
-
-    fn is_done(&self) -> bool {
-        true // only one packet
-    }
-
-    fn response_await_time(&self) -> u64 {
-        500
+    for var in vars {
+        println!("{:40}| {:45}| {}", var.section, var.name, var.value);
     }
 }

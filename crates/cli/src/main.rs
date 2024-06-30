@@ -36,12 +36,12 @@ pub(crate) struct CliOptions {
 
     /// Execute command immediately without doing short breaks between info messages beforehand.
     #[clap(long)]
-    no_wait: bool,
+    no_wait: bool, //TODO default to true
 
     /// The maximum amount of milliseconds that program should wait for game response until it will automatically exit.
     /// This will be extended by any command that may specify that the game would need additional time for computation.
     /// This setting is ignored if --no-listen is set and doesn't apply to scriptslog command.
-    #[clap(long, short, default_value_t=5000)]
+    #[clap(long, short, default_value_t=5000)] //TODO reduce to 1000
     response_timeout: u64,
 }
 
@@ -57,11 +57,13 @@ enum CliCommands {
 }
 
 
-fn main() {
+fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     match cli.command {
-        CliCommands::ServerSubcommands(c) => handle_server_subcommand(c, cli.options),
+        CliCommands::ServerSubcommands(c) => handle_server_subcommand(c, cli.options)?,
         CliCommands::LocalSubcommands(c) => handle_local_subcommand(c, cli.options),
     }
+
+    Ok(())
 }
