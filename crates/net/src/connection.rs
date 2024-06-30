@@ -1,4 +1,4 @@
-use std::{net::{IpAddr, SocketAddr, TcpStream}, time::Duration};
+use std::{io::Write, net::{IpAddr, SocketAddr, TcpStream}, time::Duration};
 
 use crate::protocol::*;
 
@@ -50,7 +50,12 @@ impl WitcherConnection {
 
 
     pub fn send(&mut self, packet: WitcherPacket) -> anyhow::Result<()> {
-        packet.encode_into(&mut self.stream)?;
+        const BUFFER_SIZE: usize = 1024;
+        let mut buf = Vec::<u8>::with_capacity(BUFFER_SIZE);
+        packet.encode_into(&mut buf)?;
+        // writing everything at once to make network debugging easier
+        // these outgoing packets are never really big, so it doesn't make sense to chop them up so much
+        self.stream.write_all(&buf)?;
         Ok(())
     }
 
