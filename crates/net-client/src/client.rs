@@ -115,7 +115,7 @@ impl WitcherClient {
 
     #[inline]
     pub fn scripts_root_path(&self) -> anyhow::Result<ScriptsRootPathResult> {
-        self.send_request::<ScriptsRootPath>(()) //FIXME not working
+        self.send_request::<ScriptsRootPath>(())
     }
 
     #[inline]

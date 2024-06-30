@@ -66,14 +66,14 @@ impl std::borrow::Borrow<[WitcherPacketData]> for MessageId {
 #[derive(Debug)]
 pub struct MessageIdRegistry {
     ids: HashSet<MessageId>,
-    max_id_length: usize
+    max_known_id_length: usize
 }
 
 impl MessageIdRegistry {
     pub fn new() -> Self {
         Self {
             ids: HashSet::new(),
-            max_id_length: 0
+            max_known_id_length: 0
         }
     }
 
@@ -83,21 +83,27 @@ impl MessageIdRegistry {
         let id_length = id.0.len();
 
         self.ids.insert(id);
-        self.max_id_length = std::cmp::max(self.max_id_length, id_length);
+        self.max_known_id_length = std::cmp::max(self.max_known_id_length, id_length);
     }
 
     pub fn probe_message_id(&self, packet: &WitcherPacket) -> Option<MessageId> {
-        let mut i = 0;
-        while i < packet.payload.len() && i <= self.max_id_length {
+        let mut longest_detected = 0;
+        let mut i = 1;
+        while i <= packet.payload.len() && i <= self.max_known_id_length {
             let payload_slice = &packet.payload[0..i];
-            if let Some(id) = self.ids.get(payload_slice) {
-                return Some(id.to_owned());
+            if self.ids.contains(payload_slice) {
+                longest_detected = i;
             }
-
             i += 1;
         }
 
-        None
+        if longest_detected > 0 {
+            let payload_slice = &packet.payload[0..longest_detected];
+            let id = MessageId(payload_slice.to_owned());
+            Some(id)
+        } else {
+            None
+        }
     }
 
 
