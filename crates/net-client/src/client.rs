@@ -1,7 +1,7 @@
 use std::sync::{atomic::AtomicBool, Arc, Mutex};
 
 use anyhow::{bail, Context};
-use rw3d_net::{connection::WitcherConnection, messages::{notifications::*, requests::*, Message, WitcherNamespace}};
+use rw3d_net::{connection::WitcherConnection, messages::{notifications::*, requests::*, Message, WitcherNamespace}, protocol::WitcherPacket};
 
 use crate::Router;
 
@@ -61,6 +61,14 @@ impl WitcherClient {
         }
     }
 
+
+
+    /// The callback will be ivoked on every packet received if it is set.
+    #[inline]
+    pub fn on_raw_packet<F>(&self, callback: F)
+    where F: Fn(WitcherPacket) + Send + Sync + 'static {
+        self.router.set_raw_packet_callback(callback)
+    }
 
 
     #[inline]
@@ -151,7 +159,7 @@ impl WitcherClient {
         };
                 
         let packet = R::assemble_packet(params);
-        self.router.add_response_handler::<R::Response, _>(result_sender);
+        self.router.add_response_callback::<R::Response, _>(result_sender);
         self.write_conn.lock().unwrap().send(packet)?;
         
         let result = if let Some(timeout) = read_timeout {
@@ -167,6 +175,6 @@ impl WitcherClient {
     where N: Notification + Send + Sync + 'static,
           F: Fn(N::Body) + Send + Sync + 'static {
 
-        self.router.set_notification_handler::<N, F>(callback);
+        self.router.set_notification_callback::<N, F>(callback);
     }
 }
