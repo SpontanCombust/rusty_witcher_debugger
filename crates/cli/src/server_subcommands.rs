@@ -17,7 +17,7 @@ pub(crate) enum ServerSubcommands {
     Reload {
         // Max waiting time for function compilation in millis
         #[clap(long, short='c', default_value_t=7000)]
-        max_compile_time: u64 //TODO remove this
+        max_compile_time: u64 //TODO this should be optional rather than with a large default
     },
     /// Run an exec function in the game
     Exec{
@@ -69,11 +69,6 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
 
     if options.verbose {
         client.on_raw_packet(print_raw_packet);
-    } else {
-        let mut scripts_reload_printer = ScriptsReloadPrinter::new();
-        client.on_scripts_reload_progress(move |params| {
-            scripts_reload_printer.print_progress(params);
-        });
     }
 
     if !options.no_wait { thread::sleep( Duration::from_millis(500) ) }
@@ -81,24 +76,41 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
 
     match cmd {
         ServerSubcommands::Reload { max_compile_time } => {
+            let (finished_token, did_finish) = std::sync::mpsc::channel();
+            let mut scripts_reload_printer = ScriptsReloadPrinter::new(finished_token, options.verbose);
+            client.on_scripts_reload_progress(move |params| {
+                scripts_reload_printer.print_progress(params);
+            });
+
             client.reload_scripts()?;
+
+            if let Err(_) = did_finish.recv_timeout(std::time::Duration::from_millis(max_compile_time)) {
+                println!("Scripts didn't compile in the specified time. Exiting early...");
+            }
         }
         ServerSubcommands::Exec { cmd } => {
             let result = client.execute_command(ExecuteCommandParams {
                 cmd
             })?;
 
-            print_exec_result(result);
+            // If printing is verbose it is handled by a notification callback
+            if !options.verbose {
+                print_exec_result(result);
+            }
         }
         ServerSubcommands::Rootpath => {
             let result = client.scripts_root_path()?;
 
-            print_root_path_result(result);
+            if !options.verbose {
+                print_root_path_result(result);
+            }
         }
         ServerSubcommands::Modlist => {
             let result = client.script_packages()?;
 
-            print_mod_list_result(result);
+            if !options.verbose {
+                print_mod_list_result(result);
+            }
         }
         ServerSubcommands::Opcode { func_name, class_name } => {
             let result = client.opcodes(OpcodesParams {
@@ -106,7 +118,9 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
                 func_name
             })?;
 
-            print_opcodes(result);
+            if !options.verbose {
+                print_opcodes(result);
+            }
         }
         ServerSubcommands::Varlist { section, name } => {
             let result = client.config_vars(ConfigVarsParams {
@@ -114,7 +128,9 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
                 name_filter: name
             })?;
 
-            print_var_list(result);
+            if !options.verbose {
+                print_var_list(result);
+            }
         }
     };
 
@@ -126,8 +142,8 @@ fn try_connect(ip: Ipv4Addr) -> anyhow::Result<WitcherConnection> {
     const TIMEOUT_MILLIS: u64 = 5000; 
 
     println!("Connecting to the game...");
-    let err = format!("Failed to connect to the game on address {}.\n
-                      Make sure the game is running and that it was launched with following flags: -net -debugscripts.", ip.to_string());
+    let err = format!("Failed to connect to the game on address {}.\n\
+                       Make sure the game is running and that it was launched with following flags: -net -debugscripts.", ip.to_string());
 
     WitcherConnection::connect_timeout(ip.into(), Duration::from_millis(TIMEOUT_MILLIS)).context(err)
 }

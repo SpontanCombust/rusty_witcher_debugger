@@ -1,3 +1,5 @@
+use std::sync::mpsc::Sender;
+
 use colored::Colorize;
 use rw3d_net::{messages::{notifications::*, requests::*}, protocol::WitcherPacket};
 
@@ -9,43 +11,56 @@ pub fn print_raw_packet(packet: WitcherPacket) {
 
 pub struct ScriptsReloadPrinter {
     warnings: Vec<String>,
-    errors: Vec<String>
+    errors: Vec<String>,
+    finished_token: Sender<()>,
+    verbose_printing: bool
 }
 
 impl ScriptsReloadPrinter {
-    pub fn new() -> Self {
+    pub fn new(finished_token: Sender<()>, verbose_printing: bool) -> Self {
         ScriptsReloadPrinter {
             warnings: Vec::new(),
-            errors: Vec::new()
+            errors: Vec::new(),
+            finished_token,
+            verbose_printing
         }
     }
 
     pub fn print_progress(&mut self, params: ScriptsReloadProgressParams) {
         match params {
-            ScriptsReloadProgressParams::Started => {
+            ScriptsReloadProgressParams::Started => if !self.verbose_printing {
                 println!("Script compilation started...");
             }
-            ScriptsReloadProgressParams::Log { message } => {
+            ScriptsReloadProgressParams::Log { message } if !self.verbose_printing => {
                 println!("{}", message)
             }
-            ScriptsReloadProgressParams::Warn { line, local_script_path, message } => {
-                println!("[Warning] {}({}): {}", local_script_path.display(), line, message )
+            ScriptsReloadProgressParams::Warn { line, local_script_path, message } if !self.verbose_printing => {
+                let s = format!("[Warning] {}({}): {}", local_script_path.display(), line, message);
+                println!("{}", s);
+                self.warnings.push(s);
             }
-            ScriptsReloadProgressParams::Error { line, local_script_path, message } => {
-                println!("[Error] {}({}): {}", local_script_path.display(), line, message )
+            ScriptsReloadProgressParams::Error { line, local_script_path, message } if !self.verbose_printing => {
+                let s = format!("[Error] {}({}): {}", local_script_path.display(), line, message);
+                println!("{}", s);
+                self.errors.push(s);
             }
             ScriptsReloadProgressParams::Finished { success } => {
-                if success {
-                    println!("Script compilation finished successfully.");
-                } else {
-                    println!("Script compilation finished with errors.");
+                if !self.verbose_printing {
+                    if success {
+                        println!("Script compilation finished successfully.");
+                    } else {
+                        println!("Script compilation finished with errors.");
+                    }
+    
+                    if !self.warnings.is_empty() || !self.errors.is_empty() {
+                        println!();
+                        self.print_summary();
+                    }
                 }
 
-                if !self.warnings.is_empty() || !self.errors.is_empty() {
-                    println!();
-                    self.print_summary();
-                }
-            }
+                let _ = self.finished_token.send(());
+            },
+            _ => {}
         }
     }
 

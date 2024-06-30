@@ -28,20 +28,25 @@ pub(crate) struct CliOptions {
     /// Exit the program almost immediately after executing the command without listening to responses coming from the game.
     /// Doesn't apply to scriptslog command.
     #[clap(long)]
-    no_listen: bool,
+    //TODO rename this to "silent" - simply say that with this there is no output, listeners should still be set up to not break the process of receiving results
+    no_listen: bool, 
 
     /// Enable verbose printing of packet contents.
     #[clap(long, short)]
+    //TODO short should be big -V, leave small -v to --version
     verbose: bool,
 
     /// Execute command immediately without doing short breaks between info messages beforehand.
     #[clap(long)]
-    no_wait: bool, //TODO default to true
+    //TODO rename to "no_delay"
+    //TODO sleep only for a brief moment before executing the command
+    no_wait: bool, 
 
     /// The maximum amount of milliseconds that program should wait for game response until it will automatically exit.
     /// This will be extended by any command that may specify that the game would need additional time for computation.
     /// This setting is ignored if --no-listen is set and doesn't apply to scriptslog command.
-    #[clap(long, short, default_value_t=5000)] //TODO reduce to 1000
+    #[clap(long, short, default_value_t=5000)] 
+    //TODO reduce to 1000
     response_timeout: u64,
 }
 
