@@ -15,9 +15,9 @@ pub(crate) enum ServerSubcommands {
     Rootpath,
     /// Reload game scripts
     Reload {
-        // Max waiting time for function compilation in millis
-        #[clap(long, short='c', default_value_t=7000)]
-        max_compile_time: u64 //TODO this should be optional rather than with a large default
+        /// Max waiting time for function compilation in milliseconds
+        #[clap(long, short='t')]
+        max_compile_time: Option<u64>
     },
     /// Run an exec function in the game
     Exec{
@@ -84,8 +84,12 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
 
             client.reload_scripts()?;
 
-            if let Err(_) = did_finish.recv_timeout(std::time::Duration::from_millis(max_compile_time)) {
-                println!("Scripts didn't compile in the specified time. Exiting early...");
+            if let Some(max_compile_time) = max_compile_time {
+                if let Err(_) = did_finish.recv_timeout(std::time::Duration::from_millis(max_compile_time)) {
+                    println!("Scripts didn't compile in the specified time. Exiting early...");
+                }
+            } else {
+                did_finish.recv()?
             }
         }
         ServerSubcommands::Exec { cmd } => {
