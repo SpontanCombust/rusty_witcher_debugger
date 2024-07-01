@@ -329,7 +329,7 @@ pub struct ScriptPackagesResult {
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
 pub struct ScriptPackageInfo {
     pub package_name: String,
-    pub abs_package_path: PathBuf
+    pub abs_scripts_root_path: PathBuf
 }
 
 impl AssemblePayload for ScriptPackagesResult {
@@ -338,7 +338,7 @@ impl AssemblePayload for ScriptPackagesResult {
 
         for p in self.packages {
             asm = asm.string_utf16(p.package_name)
-                .string_utf16(p.abs_package_path.to_string_lossy())
+                .string_utf16(p.abs_scripts_root_path.to_string_lossy())
         }
 
         asm
@@ -356,7 +356,7 @@ impl DisassemblePayload for ScriptPackagesResult {
 
             packages.push(ScriptPackageInfo {
                 package_name,
-                abs_package_path
+                abs_scripts_root_path: abs_package_path
             });
         }
 
@@ -642,14 +642,14 @@ pub struct ConfigVarInfo {
     
     /// 1 - bool, 2 - int, 3 - float, 4 - string, 0 - used as EOF
     pub data_type: i8,
-    pub unknown0: i8
+    pub _unknown0: i8
 }
 
 impl AssemblePayload for ConfigVarsResult {
     fn assemble_payload(self, mut asm: WitcherPacketAssembler) -> WitcherPacketAssembler {
         for var in self.vars {
             asm = asm.int8(var.data_type)
-                .int8(var.unknown0)
+                .int8(var._unknown0)
                 .string_utf8(var.name)
                 .string_utf8(var.section)
                 .string_utf8(var.value);
@@ -668,14 +668,14 @@ impl DisassemblePayload for ConfigVarsResult {
                 break;
             }
 
-            let unknown0 = dasm.int8().context("unknown0")?;
+            let _unknown0 = dasm.int8().context("unknown0")?;
             let name = dasm.string_utf8().context("name")?.0;
             let section = dasm.string_utf8().context("section")?.0;
             let value = dasm.string_utf8().context("value")?.0;
 
             vars.push(ConfigVarInfo {
                 data_type,
-                unknown0,
+                _unknown0,
                 name,
                 section,
                 value
