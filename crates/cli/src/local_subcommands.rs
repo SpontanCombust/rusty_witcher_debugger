@@ -17,11 +17,11 @@ pub(crate) enum LocalSubcommands {
         colors: ScriptslogColors, //FIXME try reordering so colors don't mix with other options
 
         /// How often should the log be refreshed, in millis
-        #[clap(short, long, default_value_t=1000)]
-        refresh_time: u64, //TODO shorthand to '-t'
+        #[clap(short='t', long, default_value_t=1000)]
+        refresh_time: u64,
 
         /// Filter out lines that do not containt highlighted text
-        #[clap(short, long)]
+        #[clap(short='f', long)]
         filter_non_highlighted: bool,
 
         /// Specify a custom, full path to the scriptslog file
