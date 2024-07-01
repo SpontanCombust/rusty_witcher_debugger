@@ -11,42 +11,50 @@ use crate::CliOptions;
 pub(crate) enum LocalSubcommands {
     /// Prints game's script logs onto console
     Scriptslog {
-        /// Flags for setting highlight colors for lines that contain a certain string
-        /// Colors inside mean the color of the background of the highlighted line
-        #[clap(flatten)]
-        colors: ScriptslogColors, //FIXME try reordering so colors don't mix with other options
-
         /// How often should the log be refreshed, in millis
-        #[clap(short='t', long, default_value_t=1000)]
+        #[clap(short='t', long, default_value_t=1000, display_order=0)]
         refresh_time: u64,
 
         /// Filter out lines that do not containt highlighted text
-        #[clap(short='f', long)]
+        #[clap(short='f', long, display_order=1)]
         filter_non_highlighted: bool,
 
         /// Specify a custom, full path to the scriptslog file
-        #[clap(short='p', long)]
-        custom_path: Option<String>
+        #[clap(short='p', long, display_order=2)]
+        custom_path: Option<String>,
+
+        /// Flags for setting highlight colors for lines that contain a certain string
+        /// Colors inside mean the color of the background of the highlighted line
+        #[clap(flatten)]
+        colors: ScriptslogColors,
     }
 }
 
 #[derive(Parser)]
 pub(crate) struct ScriptslogColors {
-    #[clap(long)]
+    /// Highlight lines containing specified text in black
+    #[clap(long, value_name="TEXT", display_order=3)]
     black: Vec<String>,
-    #[clap(long)]
+    /// Highlight lines containing specified text in red
+    #[clap(long, value_name="TEXT", display_order=4)]
     red: Vec<String>,
-    #[clap(long)]
+    /// Highlight lines containing specified text in green
+    #[clap(long, value_name="TEXT", display_order=5)]
     green: Vec<String>,
-    #[clap(long)]
+    /// Highlight lines containing specified text in yellow
+    #[clap(long, value_name="TEXT", display_order=6)]
     yellow: Vec<String>,
-    #[clap(long)]
+    /// Highlight lines containing specified text in blue
+    #[clap(long, value_name="TEXT", display_order=7)]
     blue: Vec<String>,
-    #[clap(long)]
+    /// Highlight lines containing specified text in magenta
+    #[clap(long, value_name="TEXT", display_order=8)]
     magenta: Vec<String>,
-    #[clap(long)]
+    /// Highlight lines containing specified text in cyan
+    #[clap(long, value_name="TEXT", display_order=9)]
     cyan: Vec<String>,
-    #[clap(long)]
+    /// Highlight lines containing specified text in white
+    #[clap(long, value_name="TEXT", display_order=10)]
     white: Vec<String>,
 }
 
