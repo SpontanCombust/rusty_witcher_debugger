@@ -1,8 +1,12 @@
 <img src="./docs/banner_transparent.png" alt="Logo" width="600"/>
 
-A standalone Command Line Interface debugging tool for The Witcher 3 written in Rust.
+A set of utilities implementing the network protocol used by Witcher 3 written in Rust.
+The repository includes:
+- `rw3d_net` - core library implementing the network protocol and known messages
+- `rw3d_net_client` - client for `rw3d_net`
+- `rw3d_cli` - Command Line Interface tool utilizing the aformentioned client
 
-This tool is intended for Witcher 3 modders who make mainly script based mods.
+`rw3d_cli` is intended for Witcher 3 modders who make mainly script based mods.
 The main features of it include recompiling game scripts at run time, monitoring scripts log and remotely running exec functions in game, which can greatly help during mod development.
 
 Parts of this code are based off of `Wolvenkit modding tool` by Traderain, rfuzzo and others
@@ -31,9 +35,9 @@ Remotely call an exec function from the game. Remember to use quotation marks fo
 rw3d_cli.exe exec "spawn('Nekker', 3)"
 ```
 
-Remotely call an exec function from the game without waiting for tool messages or any game response.
+Execute a command without artificial delays and extra logs. Useful when using the CLI as a backend for other tools.
 ```ps1
-rw3d_cli.exe --no-wait --no-listen exec "gotoProlog()"
+rw3d_cli.exe --no-delay --log-level=output-only exec "logstats()"
 ```
 
 Monitor game's scripts log and highlight lines that include specific keywords. You can set multiple key words to be highlighted with the same color.
@@ -58,7 +62,7 @@ rw3d_cli.exe rootpath
 
 Print the opcode for a script function.
 ```ps1
-rw3d_cli.exe opcode -f IsCiri -c CR4Player
+rw3d_cli.exe opcode -f "IsCiri" -c "CR4Player"
 ```
 
 Print the list of config variables.
