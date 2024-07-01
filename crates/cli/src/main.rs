@@ -32,8 +32,7 @@ pub(crate) struct CliOptions {
     no_listen: bool, 
 
     /// Enable verbose printing of packet contents.
-    #[clap(long, short)]
-    //TODO short should be big -V, leave small -v to --version
+    #[clap(long, short='v')]
     verbose: bool,
 
     /// Execute command immediately without doing short breaks between info messages beforehand.
@@ -45,8 +44,7 @@ pub(crate) struct CliOptions {
     /// The maximum amount of milliseconds that program should wait for game response until it will automatically exit.
     /// This will be extended by any command that may specify that the game would need additional time for computation.
     /// This setting is ignored if --no-listen is set and doesn't apply to scriptslog command.
-    #[clap(long, short, default_value_t=5000)] 
-    //TODO reduce to 1000
+    #[clap(long, short='t', default_value_t=2000)] 
     response_timeout: u64,
 }
 
