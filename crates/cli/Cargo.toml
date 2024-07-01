@@ -12,3 +12,4 @@ rw3d_scriptslog = { path = "../scriptslog" }
 clap.workspace = true
 colored.workspace = true
 anyhow.workspace = true
+ctrlc.workspace = true

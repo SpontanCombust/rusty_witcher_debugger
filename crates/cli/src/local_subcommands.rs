@@ -3,7 +3,8 @@ use std::{thread, time::Duration};
 use clap::{ Parser, Subcommand};
 use colored::{Colorize, Color};
 
-use crate::{input_waiter::input_waiter, CliOptions};
+use crate::CliOptions;
+
 
 /// Subcommands that can be executed without connecting to game's socket
 #[derive(Subcommand)]
@@ -13,11 +14,11 @@ pub(crate) enum LocalSubcommands {
         /// Flags for setting highlight colors for lines that contain a certain string
         /// Colors inside mean the color of the background of the highlighted line
         #[clap(flatten)]
-        colors: ScriptslogColors,
+        colors: ScriptslogColors, //FIXME try reordering so colors don't mix with other options
 
         /// How often should the log be refreshed, in millis
         #[clap(short, long, default_value_t=1000)]
-        refresh_time: u64,
+        refresh_time: u64, //TODO shorthand to '-t'
 
         /// Filter out lines that do not containt highlighted text
         #[clap(short, long)]
@@ -55,14 +56,14 @@ pub(crate) fn handle_local_subcommand( cmd: LocalSubcommands, options: CliOption
 
     match cmd {
         LocalSubcommands::Scriptslog { colors, refresh_time, filter_non_highlighted, custom_path } => {
-            println!("\nYou can press Enter at any moment to exit the program.\n");
+            println!("\nYou can press Ctrl-C at any moment to exit the program.\n");
             if !options.no_delay { thread::sleep( Duration::from_millis(1000)) }
 
-            let (logger_snd, logger_rcv) = std::sync::mpsc::channel();
-            std::thread::spawn(move || input_waiter(logger_snd));
+            let (cancel_sender, cancel_token) = std::sync::mpsc::channel();
+            ctrlc::set_handler(move || cancel_sender.send(()).expect("Failed to send cancel signal")).expect("Failed to set Ctrl-C handler");
 
             let highlights = scriptslog_colors_to_highlight_records(colors);
-            if let Some(err) = rw3d_scriptslog::tail_scriptslog(|text| scriptslog_printer(text, &highlights, filter_non_highlighted), refresh_time, logger_rcv, custom_path) {
+            if let Some(err) = rw3d_scriptslog::tail_scriptslog(|text| scriptslog_printer(text, &highlights, filter_non_highlighted), refresh_time, cancel_token, custom_path) {
                 println!("{}", err);
             }
         }
