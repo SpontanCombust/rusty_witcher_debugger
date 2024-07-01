@@ -29,19 +29,19 @@ pub(crate) enum ServerSubcommands {
     /// Get opcode of a script function
     Opcode {
         /// Name of the function
-        #[clap(short)]
+        #[clap(short='f')]
         func_name: String, 
         /// Name of the class; can be empty
-        #[clap(short)]
+        #[clap(short='c')]
         class_name: Option<String> 
     },
     /// Search for config variables
     Varlist {
         /// Var section to search; if left empty searches all sections
-        #[clap(short)]
+        #[clap(short='s')]
         section: Option<String>,
         /// Token that should be included in vars; if left empty searches all variables
-        #[clap(short)]
+        #[clap(short='n')]
         name: Option<String>
     },
 }
