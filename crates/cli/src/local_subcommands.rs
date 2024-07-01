@@ -3,7 +3,7 @@ use std::{thread, time::Duration};
 use clap::{ Parser, Subcommand};
 use colored::{Colorize, Color};
 
-use crate::CliOptions;
+use crate::{logging::println_log, CliOptions};
 
 
 /// Subcommands that can be executed without connecting to game's socket
@@ -59,12 +59,12 @@ pub(crate) struct ScriptslogColors {
 }
 
 pub(crate) fn handle_local_subcommand( cmd: LocalSubcommands, options: CliOptions ) {
-    println!("Executing the command...");
+    println_log("Executing the command...");
     if !options.no_delay { thread::sleep( Duration::from_millis(500)) }
 
     match cmd {
         LocalSubcommands::Scriptslog { colors, refresh_time, filter_non_highlighted, custom_path } => {
-            println!("\nYou can press Ctrl-C at any moment to exit the program.\n");
+            println_log("\nYou can press Ctrl-C at any moment to exit the program.\n");
             if !options.no_delay { thread::sleep( Duration::from_millis(1000)) }
 
             let (cancel_sender, cancel_token) = std::sync::mpsc::channel();
@@ -72,7 +72,7 @@ pub(crate) fn handle_local_subcommand( cmd: LocalSubcommands, options: CliOption
 
             let highlights = scriptslog_colors_to_highlight_records(colors);
             if let Some(err) = rw3d_scriptslog::tail_scriptslog(|text| scriptslog_printer(text, &highlights, filter_non_highlighted), refresh_time, cancel_token, custom_path) {
-                println!("{}", err);
+                println_log(err);
             }
         }
     }

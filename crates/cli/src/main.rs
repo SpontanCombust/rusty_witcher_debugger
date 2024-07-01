@@ -1,10 +1,12 @@
 mod server_subcommands;
 mod local_subcommands;
 mod response_handling;
+mod logging;
 
 use local_subcommands::{LocalSubcommands, handle_local_subcommand};
+use logging::LOG_LEVEL;
 use server_subcommands::{ServerSubcommands, handle_server_subcommand};
-use clap::{Parser, Subcommand};
+use clap::{ArgEnum, Parser, Subcommand};
 
 
 #[derive(Parser)]
@@ -24,11 +26,10 @@ pub(crate) struct CliOptions {
     #[clap(long, default_value="127.0.0.1")]
     ip: String,
 
-    /// Exit the program almost immediately after executing the command without listening to responses coming from the game.
-    /// Doesn't apply to scriptslog command.
-    #[clap(long)]
-    //TODO rename this to "silent" - simply say that with this there is no output, listeners should still be set up to not break the process of receiving results
-    no_listen: bool, 
+    /// Specify what logs are allowed to be printed to the standard output.
+    /// Does not apply to output from the `scriptslog` command.
+    #[clap(long, short='l', value_enum, default_value="all")]
+    log_level: LogLevel, 
 
     /// Enable verbose printing of packet contents.
     #[clap(long, short='v')]
@@ -38,11 +39,20 @@ pub(crate) struct CliOptions {
     #[clap(long)]
     no_delay: bool, 
 
-    /// The maximum amount of milliseconds that program should wait for game response until it will automatically exit.
-    /// This will be extended by any command that may specify that the game would need additional time for computation.
-    /// This setting is ignored if --no-listen is set and doesn't apply to scriptslog command.
+    /// The maximum amount of milliseconds that program should wait for the game to respond.
+    /// It will also affect how quickly the program shuts down.
     #[clap(long, short='t', default_value_t=2000)] 
     response_timeout: u64,
+}
+
+#[derive(Debug, ArgEnum, Clone, Copy, PartialEq, Eq)]
+enum LogLevel {
+    /// Print all messages.
+    All,
+    /// Print only result of the command.
+    OutputOnly,
+    /// Don't print anything. This will effectively make the programm exit immediately after executing the command.
+    None
 }
 
 #[derive(Subcommand)]
@@ -59,6 +69,8 @@ enum CliCommands {
 
 fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
+
+    LOG_LEVEL.set(cli.options.log_level).unwrap();
 
     match cli.command {
         CliCommands::ServerSubcommands(c) => handle_server_subcommand(c, cli.options)?,

@@ -3,9 +3,11 @@ use std::sync::mpsc::Sender;
 use colored::Colorize;
 use rw3d_net::{messages::{notifications::*, requests::*}, protocol::WitcherPacket};
 
+use crate::logging::println_output;
+
 
 pub fn print_raw_packet(packet: WitcherPacket) {
-    println!("{:?}", packet);
+    println_output(format!("{:?}", packet));
 }
 
 
@@ -29,31 +31,31 @@ impl ScriptsReloadPrinter {
     pub fn print_progress(&mut self, params: ScriptsReloadProgressParams) {
         match params {
             ScriptsReloadProgressParams::Started => if !self.verbose_printing {
-                println!("Script compilation started...");
+                println_output("Script compilation started...");
             }
             ScriptsReloadProgressParams::Log { message } if !self.verbose_printing => {
-                println!("{}", message)
+                println_output(message)
             }
             ScriptsReloadProgressParams::Warn { line, local_script_path, message } if !self.verbose_printing => {
                 let s = format!("[Warning] {}({}): {}", local_script_path.display(), line, message);
-                println!("{}", s);
+                println_output(&s);
                 self.warnings.push(s);
             }
             ScriptsReloadProgressParams::Error { line, local_script_path, message } if !self.verbose_printing => {
                 let s = format!("[Error] {}({}): {}", local_script_path.display(), line, message);
-                println!("{}", s);
+                println_output(&s);
                 self.errors.push(s);
             }
             ScriptsReloadProgressParams::Finished { success } => {
                 if !self.verbose_printing {
                     if success {
-                        println!("Script compilation finished successfully.");
+                        println_output("Script compilation finished successfully.");
                     } else {
-                        println!("Script compilation finished with errors.");
+                        println_output("Script compilation finished with errors.");
                     }
     
                     if !self.warnings.is_empty() || !self.errors.is_empty() {
-                        println!();
+                        println_output("");
                         self.print_summary();
                     }
                 }
@@ -65,18 +67,18 @@ impl ScriptsReloadPrinter {
     }
 
     fn print_summary(&self) {
-        println!("========== {} Errors, {} Warnings ==========", self.errors.len(), self.warnings.len());
+        println_output(format!("========== {} Errors, {} Warnings ==========", self.errors.len(), self.warnings.len()));
 
         for e in &self.errors {
-            println!("{}", e.red());
+            println_output(e.red());
         }
 
         if self.errors.len() > 0 {
-            println!(); // empty line between errors and warnings
+            println_output(""); // empty line between errors and warnings
         }
 
         for w in &self.warnings {
-            println!("{}", w.yellow());
+            println_output(w.yellow());
         }
     }
 }
@@ -86,25 +88,25 @@ pub fn print_exec_result(result: ExecuteCommandResult) {
     match result {
         ExecuteCommandResult::Success { log_output } => {
             if let Some(log_output) = log_output {
-                println!("{}", log_output.join("\n"))
+                println_output(log_output.join("\n"))
             } else {
-                println!("Command executed successfully")
+                println_output("Command executed successfully")
             }
         }
         ExecuteCommandResult::Fail => {
-            println!("Command failed to execute")
+            println_output("Command failed to execute")
         }
     }
 }
 
 
 pub fn print_root_path_result(result: ScriptsRootPathResult) {
-    println!("{}", result.abs_path.display())
+    println_output(result.abs_path.display())
 }
 
 
 pub fn print_mod_list_result(result: ScriptPackagesResult) {
-    println!("Mods installed: {}", result.packages.len() - 1); // one is always content0
+    println_output(format!("Mods installed: {}", result.packages.len() - 1)); // one is always content0
 
     let mut mods = result.packages.into_iter()
         .filter(|p| p.package_name != "content0")
@@ -113,17 +115,17 @@ pub fn print_mod_list_result(result: ScriptPackagesResult) {
 
     mods.sort();
     for m in mods {
-        println!("{}", m);
+        println_output(m);
     }
 }
 
 
 pub fn print_opcodes(result: OpcodesResult) {
     for breakdown in result.breakdowns {
-        println!("Line {}", breakdown.line);
-        println!("Opcodes: ");
+        println_output(format!("Line {}", breakdown.line));
+        println_output("Opcodes: ");
         for opcode in breakdown.opcodes {
-            println!("{}", opcode);
+            println_output(opcode);
         }
     }
 }
@@ -131,9 +133,9 @@ pub fn print_opcodes(result: OpcodesResult) {
 
 pub fn print_var_list(result: ConfigVarsResult) {
     let tab_line = format!("{}+-{}+-{}", "-".repeat(40), "-".repeat(45), "-".repeat(40) );
-    println!("{}", tab_line);
-    println!("{:40}| {:45}| {}", "Section", "Variable", "Value");
-    println!("{}", tab_line);
+    println_output(&tab_line);
+    println_output(format!("{:40}| {:45}| {}", "Section", "Variable", "Value"));
+    println_output(&tab_line);
 
     let mut vars = result.vars;
     vars.sort_by(|v1, v2| {
@@ -144,6 +146,6 @@ pub fn print_var_list(result: ConfigVarsResult) {
     });
 
     for var in vars {
-        println!("{:40}| {:45}| {}", var.section, var.name, var.value);
+        println_output(format!("{:40}| {:45}| {}", var.section, var.name, var.value));
     }
 }

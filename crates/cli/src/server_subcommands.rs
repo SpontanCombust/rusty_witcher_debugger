@@ -5,7 +5,7 @@ use clap::Subcommand;
 use rw3d_net::{connection::WitcherConnection, messages::requests::*};
 use rw3d_net_client::WitcherClient;
 
-use crate::{CliOptions, response_handling::*};
+use crate::{logging::println_log, response_handling::*, CliOptions};
 
 
 /// Subcommands that require connection to game's socket and sending messages to it
@@ -50,27 +50,33 @@ pub(crate) enum ServerSubcommands {
 pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOptions ) -> anyhow::Result<()> {
     let ip = Ipv4Addr::from_str(&options.ip).context("Invalid IPv4 address specified")?;
 
-    let mut connection = try_connect(ip)?;
+    const CONNECT_TIMEOUT_MILLIS: u64 = 5000; 
+
+    println_log("Connecting to the game...");
+    let mut connection = 
+        WitcherConnection::connect_timeout(ip.into(), Duration::from_millis(CONNECT_TIMEOUT_MILLIS))
+        .context(format!("Failed to connect to the game on address {}.\n\
+                          Make sure the game is running and that it was launched with following flags: -net -debugscripts.", ip.to_string()))?;
+
     connection.set_read_timeout(Some(Duration::from_millis(options.response_timeout))).unwrap();
+
 
     let client = WitcherClient::new(connection);
     client.start().context("Failed to start up the client")?;
 
-    println!("Successfully connected to the game!");
+    if !options.no_delay { thread::sleep( Duration::from_millis(500) ) }
+    println_log("Successfully connected to the game and started the client!");
+    
 
-    if !options.no_listen {
-        println!("Setting up listeners...");
-
-        client.listen_to_all_namespaces().context("Failed to set up listeners")?;
-    }
-
+    println_log("Setting up listeners...");
+    client.listen_to_all_namespaces().context("Failed to set up listeners")?;
 
     if options.verbose {
         client.on_raw_packet(print_raw_packet);
     }
 
-    println!("Executing the command...\n");
-    if !options.no_delay { thread::sleep( Duration::from_millis(500) ) }
+    println_log("Executing the command...\n");
+    if !options.no_delay { thread::sleep( Duration::from_millis(750) ) }
 
     match cmd {
         ServerSubcommands::Reload { max_compile_time } => {
@@ -84,7 +90,7 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
 
             if let Some(max_compile_time) = max_compile_time {
                 if let Err(_) = did_finish.recv_timeout(std::time::Duration::from_millis(max_compile_time)) {
-                    println!("Scripts didn't compile in the specified time. Exiting early...");
+                    println_log("Scripts didn't compile in the specified time. Exiting early...");
                 }
             } else {
                 did_finish.recv()?
@@ -136,16 +142,6 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
         }
     };
 
-    println!("\nShutting down client...");
+    println_log("\nShutting down client...");
     client.stop().context("Failed to shut down client connection")
-}
-
-fn try_connect(ip: Ipv4Addr) -> anyhow::Result<WitcherConnection> {
-    const TIMEOUT_MILLIS: u64 = 5000; 
-
-    println!("Connecting to the game...");
-    let err = format!("Failed to connect to the game on address {}.\n\
-                       Make sure the game is running and that it was launched with following flags: -net -debugscripts.", ip.to_string());
-
-    WitcherConnection::connect_timeout(ip.into(), Duration::from_millis(TIMEOUT_MILLIS)).context(err)
 }
