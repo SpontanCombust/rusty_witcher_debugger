@@ -56,11 +56,9 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
     let client = WitcherClient::new(connection);
     client.start().context("Failed to start up the client")?;
 
-    if !options.no_wait { thread::sleep( Duration::from_millis(500) ) }
     println!("Successfully connected to the game!");
 
     if !options.no_listen {
-        if !options.no_wait { thread::sleep( Duration::from_millis(500) ) }
         println!("Setting up listeners...");
 
         client.listen_to_all_namespaces().context("Failed to set up listeners")?;
@@ -71,8 +69,8 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
         client.on_raw_packet(print_raw_packet);
     }
 
-    if !options.no_wait { thread::sleep( Duration::from_millis(500) ) }
     println!("Executing the command...\n");
+    if !options.no_delay { thread::sleep( Duration::from_millis(500) ) }
 
     match cmd {
         ServerSubcommands::Reload { max_compile_time } => {

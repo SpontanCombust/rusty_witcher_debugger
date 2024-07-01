@@ -37,9 +37,7 @@ pub(crate) struct CliOptions {
 
     /// Execute command immediately without doing short breaks between info messages beforehand.
     #[clap(long)]
-    //TODO rename to "no_delay"
-    //TODO sleep only for a brief moment before executing the command
-    no_wait: bool, 
+    no_delay: bool, 
 
     /// The maximum amount of milliseconds that program should wait for game response until it will automatically exit.
     /// This will be extended by any command that may specify that the game would need additional time for computation.

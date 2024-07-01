@@ -50,18 +50,17 @@ pub(crate) struct ScriptslogColors {
 }
 
 pub(crate) fn handle_local_subcommand( cmd: LocalSubcommands, options: CliOptions ) {
-    if !options.no_wait { thread::sleep( Duration::from_millis(1000) ) }
-    println!("Handling the command...");
-
-    let (logger_snd, logger_rcv) = std::sync::mpsc::channel();
-
-    std::thread::spawn(move || input_waiter(logger_snd) );
-
-    println!("\nYou can press Enter at any moment to exit the program.\n");
-    if !options.no_wait { thread::sleep( Duration::from_millis(3000) ) }
+    println!("Executing the command...");
+    if !options.no_delay { thread::sleep( Duration::from_millis(500)) }
 
     match cmd {
         LocalSubcommands::Scriptslog { colors, refresh_time, filter_non_highlighted, custom_path } => {
+            println!("\nYou can press Enter at any moment to exit the program.\n");
+            if !options.no_delay { thread::sleep( Duration::from_millis(1000)) }
+
+            let (logger_snd, logger_rcv) = std::sync::mpsc::channel();
+            std::thread::spawn(move || input_waiter(logger_snd));
+
             let highlights = scriptslog_colors_to_highlight_records(colors);
             if let Some(err) = rw3d_scriptslog::tail_scriptslog(|text| scriptslog_printer(text, &highlights, filter_non_highlighted), refresh_time, logger_rcv, custom_path) {
                 println!("{}", err);
