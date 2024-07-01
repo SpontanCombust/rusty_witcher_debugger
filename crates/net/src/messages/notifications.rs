@@ -213,3 +213,146 @@ impl DisassemblePayload for ScriptsReloadProgressParams {
         }
     }
 }
+
+
+
+
+
+
+
+
+#[cfg(test)]
+mod test {
+    use std::collections::VecDeque;
+
+    use super::*;
+
+
+    #[test]
+    fn listen_to_namespace_notif_encode_test() {
+        {
+            let param1 = ListenToNamespaceParams {
+                namesp: WitcherNamespace::ScriptDebugger
+            };
+            let packet1 = ListenToNamespace::assemble_packet(param1.clone());
+    
+            let mut bytes = VecDeque::new();
+            packet1.encode_into(&mut bytes).unwrap();
+    
+            let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+            let param2 = ListenToNamespace::disassemble_packet(packet2.clone()).unwrap();
+    
+            assert_eq!(packet1, packet2);
+            assert_eq!(param1, param2);
+        }
+        {
+            let param1 = ListenToNamespaceParams {
+                namesp: WitcherNamespace::Scripts
+            };
+            let packet1 = ListenToNamespace::assemble_packet(param1.clone());
+    
+            let mut bytes = VecDeque::new();
+            packet1.encode_into(&mut bytes).unwrap();
+    
+            let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+            let param2 = ListenToNamespace::disassemble_packet(packet2.clone()).unwrap();
+    
+            assert_eq!(packet1, packet2);
+            assert_eq!(param1, param2);
+        }
+    }
+
+    #[test]
+    fn reload_scripts_notif_encode_test() {
+        let param1 = ();
+        let packet1 = ReloadScripts::assemble_packet(param1.clone());
+
+        let mut bytes = VecDeque::new();
+        packet1.encode_into(&mut bytes).unwrap();
+
+        let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+        let param2 = ReloadScripts::disassemble_packet(packet2.clone()).unwrap();
+
+        assert_eq!(packet1, packet2);
+        assert_eq!(param1, param2);
+    }
+
+    #[test]
+    fn scripts_reload_progress_notif_encode_test() {
+        {
+            let param1 = ScriptsReloadProgressParams::Started;
+            let packet1 = ScriptsReloadProgress::assemble_packet(param1.clone());
+
+            let mut bytes = VecDeque::new();
+            packet1.encode_into(&mut bytes).unwrap();
+
+            let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+            let param2 = ScriptsReloadProgress::disassemble_packet(packet2.clone()).unwrap();
+
+            assert_eq!(packet1, packet2);
+            assert_eq!(param1, param2);
+        }
+        {
+            let param1 = ScriptsReloadProgressParams::Log {
+                message: "Compiling scripts...".into()
+            };
+            let packet1 = ScriptsReloadProgress::assemble_packet(param1.clone());
+
+            let mut bytes = VecDeque::new();
+            packet1.encode_into(&mut bytes).unwrap();
+
+            let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+            let param2 = ScriptsReloadProgress::disassemble_packet(packet2.clone()).unwrap();
+
+            assert_eq!(packet1, packet2);
+            assert_eq!(param1, param2);
+        }
+        {
+            let param1 = ScriptsReloadProgressParams::Warn {
+                line: 120,
+                local_script_path: "game/imports.ws".into(),
+                message: "Function used but not exported from C++".into()
+            };
+            let packet1 = ScriptsReloadProgress::assemble_packet(param1.clone());
+
+            let mut bytes = VecDeque::new();
+            packet1.encode_into(&mut bytes).unwrap();
+
+            let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+            let param2 = ScriptsReloadProgress::disassemble_packet(packet2.clone()).unwrap();
+
+            assert_eq!(packet1, packet2);
+            assert_eq!(param1, param2);
+        }
+        {
+            let param1 = ScriptsReloadProgressParams::Error {
+                line: 2137,
+                local_script_path: "engine/papaj.ws".into(),
+                message: "Redeclaration of variable \"yellow\"".into()
+            };
+            let packet1 = ScriptsReloadProgress::assemble_packet(param1.clone());
+
+            let mut bytes = VecDeque::new();
+            packet1.encode_into(&mut bytes).unwrap();
+
+            let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+            let param2 = ScriptsReloadProgress::disassemble_packet(packet2.clone()).unwrap();
+
+            assert_eq!(packet1, packet2);
+            assert_eq!(param1, param2);
+        }
+        {
+            let param1 = ScriptsReloadProgressParams::Finished { success: false };
+            let packet1 = ScriptsReloadProgress::assemble_packet(param1.clone());
+
+            let mut bytes = VecDeque::new();
+            packet1.encode_into(&mut bytes).unwrap();
+
+            let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+            let param2 = ScriptsReloadProgress::disassemble_packet(packet2.clone()).unwrap();
+
+            assert_eq!(packet1, packet2);
+            assert_eq!(param1, param2);
+        }
+    }
+}

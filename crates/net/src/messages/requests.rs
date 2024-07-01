@@ -687,3 +687,262 @@ impl DisassemblePayload for ConfigVarsResult {
         })
     }
 }
+
+
+
+
+
+
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+    use std::collections::VecDeque;
+
+
+    #[test]
+    fn scripts_root_path_req_encode_test() {
+        let param1 = ();
+        let packet1 = ScriptsRootPath::assemble_packet(param1.clone());
+
+        let mut bytes = VecDeque::new();
+        packet1.encode_into(&mut bytes).unwrap();
+
+        let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+        let param2 = ScriptsRootPath::disassemble_packet(packet2.clone()).unwrap();
+
+        assert_eq!(packet1, packet2);
+        assert_eq!(param1, param2);
+    }
+
+    #[test]
+    fn scripts_root_path_resp_encode_test() {
+        let param1 = ScriptsRootPathResult {
+            abs_path: r"C:\Program Files\GOG\Witcher 3\content\content0\scripts".into()
+        };
+        let packet1 = ScriptsRootPathResponse::assemble_packet(param1.clone());
+
+        let mut bytes = VecDeque::new();
+        packet1.encode_into(&mut bytes).unwrap();
+
+        let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+        let param2 = ScriptsRootPathResponse::disassemble_packet(packet2.clone()).unwrap();
+
+        assert_eq!(packet1, packet2);
+        assert_eq!(param1, param2);
+    }
+
+    #[test]
+    fn exec_command_req_encode_test() {
+        let param1 = ExecuteCommandParams {
+            cmd: "additem('griffin_sword', 1)".into()
+        };
+        let packet1 = ExecuteCommand::assemble_packet(param1.clone());
+
+        let mut bytes = VecDeque::new();
+        packet1.encode_into(&mut bytes).unwrap();
+
+        let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+        let param2 = ExecuteCommand::disassemble_packet(packet2.clone()).unwrap();
+
+        assert_eq!(packet1, packet2);
+        assert_eq!(param1, param2);
+    }
+
+    #[test]
+    fn exec_command_resp_encode_test() {
+        {
+            let param1 = ExecuteCommandResult::Success { 
+                log_output: None 
+            };
+            let packet1 = ExecuteCommandResponse::assemble_packet(param1.clone());
+    
+            let mut bytes = VecDeque::new();
+            packet1.encode_into(&mut bytes).unwrap();
+    
+            let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+            let param2 = ExecuteCommandResponse::disassemble_packet(packet2.clone()).unwrap();
+    
+            assert_eq!(packet1, packet2);
+            assert_eq!(param1, param2);
+        }
+        {
+            let param1 = ExecuteCommandResult::Success { 
+                log_output: Some(vec![
+                    "Hello".into(),
+                    "World!".into()
+                ]) 
+            };
+            let packet1 = ExecuteCommandResponse::assemble_packet(param1.clone());
+    
+            let mut bytes = VecDeque::new();
+            packet1.encode_into(&mut bytes).unwrap();
+    
+            let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+            let param2 = ExecuteCommandResponse::disassemble_packet(packet2.clone()).unwrap();
+    
+            assert_eq!(packet1, packet2);
+            assert_eq!(param1, param2);
+        }
+        {
+            let param1 = ExecuteCommandResult::Fail;
+            let packet1 = ExecuteCommandResponse::assemble_packet(param1.clone());
+    
+            let mut bytes = VecDeque::new();
+            packet1.encode_into(&mut bytes).unwrap();
+    
+            let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+            let param2 = ExecuteCommandResponse::disassemble_packet(packet2.clone()).unwrap();
+    
+            assert_eq!(packet1, packet2);
+            assert_eq!(param1, param2);
+        }
+    }
+
+    #[test]
+    fn script_packages_req_encode_test() {
+        let param1 = ();
+        let packet1 = ScriptPackages::assemble_packet(param1.clone());
+
+        let mut bytes = VecDeque::new();
+        packet1.encode_into(&mut bytes).unwrap();
+
+        let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+        let param2 = ScriptPackages::disassemble_packet(packet2.clone()).unwrap();
+
+        assert_eq!(packet1, packet2);
+        assert_eq!(param1, param2);
+    }
+
+    #[test]
+    fn script_packages_resp_encode_test() {
+        let param1 = ScriptPackagesResult {
+            packages: vec![
+                ScriptPackageInfo {
+                    package_name: "content0".into(),
+                    abs_scripts_root_path: r"C:\Program Files\GOG\Witcher 3\content\content0\scripts".into()
+                },
+                ScriptPackageInfo {
+                    package_name: "modTest1".into(),
+                    abs_scripts_root_path: r"C:\Program Files\GOG\Witcher 3\Mods\modTest1\content\scripts".into()
+                },
+                ScriptPackageInfo {
+                    package_name: "modSharedUtils".into(),
+                    abs_scripts_root_path: r"C:\Program Files\GOG\Witcher 3\Mods\modSharedUtils\content\scripts".into()
+                }
+            ]
+        };
+        let packet1 = ScriptPackagesResponse::assemble_packet(param1.clone());
+
+        let mut bytes = VecDeque::new();
+        packet1.encode_into(&mut bytes).unwrap();
+
+        let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+        let param2 = ScriptPackagesResponse::disassemble_packet(packet2.clone()).unwrap();
+
+        assert_eq!(packet1, packet2);
+        assert_eq!(param1, param2);
+    }
+
+    #[test]
+    fn opcodes_req_encode_test() {
+        let param1 = OpcodesParams {
+            class_name: Some("CR4Player".into()),
+            func_name: "IsCiri".into()
+        };
+        let packet1 = Opcodes::assemble_packet(param1.clone());
+
+        let mut bytes = VecDeque::new();
+        packet1.encode_into(&mut bytes).unwrap();
+
+        let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+        let param2 = Opcodes::disassemble_packet(packet2.clone()).unwrap();
+
+        assert_eq!(packet1, packet2);
+        assert_eq!(param1, param2);
+    }
+
+    #[test]
+    fn opcodes_resp_encode_test() {
+        let param1 = OpcodesResult {
+            breakdowns: vec![
+                OpcodeBreakdown {
+                    line: 123,
+                    opcodes: vec!["opcode1".into(), "opcode2".into()]
+                },
+                OpcodeBreakdown {
+                    line: 125,
+                    opcodes: vec!["Opcode3".into()]
+                }
+            ]
+        };
+        let packet1 = OpcodesResponse::assemble_packet(param1.clone());
+
+        let mut bytes = VecDeque::new();
+        packet1.encode_into(&mut bytes).unwrap();
+
+        let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+        let param2 = OpcodesResponse::disassemble_packet(packet2.clone()).unwrap();
+
+        assert_eq!(packet1, packet2);
+        assert_eq!(param1, param2);
+    }
+
+    #[test]
+    fn config_vars_req_encode_test() {
+        let param1 = ConfigVarsParams {
+            section_filter: Some("Graphics".into()),
+            name_filter: None,
+        };
+        let packet1 = ConfigVars::assemble_packet(param1.clone());
+
+        let mut bytes = VecDeque::new();
+        packet1.encode_into(&mut bytes).unwrap();
+
+        let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+        let param2 = ConfigVars::disassemble_packet(packet2.clone()).unwrap();
+
+        assert_eq!(packet1, packet2);
+        assert_eq!(param1, param2);
+    }
+
+    #[test]
+    fn config_vars_resp_encode_test() {
+        let param1 = ConfigVarsResult {
+            vars: vec![
+                ConfigVarInfo {
+                    section: "Graphics".into(),
+                    name: "FXAA".into(),
+                    value: "true".into(),
+                    data_type: 1,
+                    _unknown0: 0,
+                },
+                ConfigVarInfo {
+                    section: "Graphics".into(),
+                    name: "Anisotropic Filtering".into(),
+                    value: "8".into(),
+                    data_type: 2,
+                    _unknown0: 0,
+                },
+                ConfigVarInfo {
+                    section: "Graphics".into(),
+                    name: "Shadow Distance".into(),
+                    value: "50.25".into(),
+                    data_type: 3,
+                    _unknown0: 0,
+                }
+            ]
+        };
+        let packet1 = ConfigVarsResponse::assemble_packet(param1.clone());
+
+        let mut bytes = VecDeque::new();
+        packet1.encode_into(&mut bytes).unwrap();
+
+        let packet2 = WitcherPacket::decode_from(&mut bytes).unwrap();
+        let param2 = ConfigVarsResponse::disassemble_packet(packet2.clone()).unwrap();
+
+        assert_eq!(packet1, packet2);
+        assert_eq!(param1, param2);
+    }
+}
