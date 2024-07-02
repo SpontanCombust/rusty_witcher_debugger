@@ -77,13 +77,14 @@ impl MessageIdRegistry {
         }
     }
 
-    pub fn register_message<T>(&mut self) 
+    pub fn register_message<T>(&mut self) -> MessageId
     where T: Message {
         let id = T::assemble_id();
         let id_length = id.0.len();
 
-        self.ids.insert(id);
+        self.ids.insert(id.clone());
         self.max_known_id_length = std::cmp::max(self.max_known_id_length, id_length);
+        id
     }
 
     pub fn probe_message_id(&self, packet: &WitcherPacket) -> Option<MessageId> {

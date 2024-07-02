@@ -26,8 +26,7 @@ impl Router {
     where R: Response + Send + Sync + 'static,
           F: FnOnce(R::Body) + Send + Sync + 'static {
         
-        self.id_registry.lock().unwrap().register_message::<R>();
-        let id = R::assemble_id();
+        let id = self.id_registry.lock().unwrap().register_message::<R>();
         self.response_handlers.entry(id)
             .or_default()
             .push_back(Box::new(ResponseRouteHandler::<R, F>::new(callback)));
@@ -37,8 +36,7 @@ impl Router {
     where N: Notification + Send + Sync + 'static,
           F: FnMut(N::Body) + Send + Sync + 'static {
         
-        self.id_registry.lock().unwrap().register_message::<N>();
-        let id = N::assemble_id();
+        let id = self.id_registry.lock().unwrap().register_message::<N>();
         self.notif_handlers.entry(id)
             .insert(Box::new(NotificationRouteHandler::<N, F>::new(callback)));
     }
