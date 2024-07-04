@@ -162,11 +162,7 @@ impl WitcherClient {
         self.router.add_response_callback::<R::Response, _>(result_sender);
         self.write_conn.lock().unwrap().send(packet)?;
         
-        let result = if let Some(timeout) = read_timeout {
-            recv.recv_timeout(timeout).context("Waited too long for the response")?
-        } else {
-            recv.recv()?
-        };
+        let result = recv.recv_timeout(read_timeout).context("Waited too long for the response")?;
 
         Ok(result)
     }

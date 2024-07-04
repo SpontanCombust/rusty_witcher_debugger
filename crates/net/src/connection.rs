@@ -1,5 +1,7 @@
 use std::{io::Write, net::{IpAddr, SocketAddr, TcpStream}, time::Duration};
 
+use anyhow::Context;
+
 use crate::protocol::*;
 
 
@@ -10,10 +12,14 @@ pub struct WitcherConnection {
 
 impl WitcherConnection {
     pub const GAME_PORT: u16 = 37001;
+    /// A read timeout is necessary to be able to shut down the connection
+    /// Without it it would block infinitely until it would receive data or the connection was severed
+    pub const DEFAULT_READ_TIMEOUT_MILLIS: u64 = 2000;
 
     pub fn connect(ip: IpAddr) -> anyhow::Result<Self> {
         let addr = SocketAddr::new(ip, Self::GAME_PORT);
         let stream = TcpStream::connect(addr)?;
+        stream.set_read_timeout(Some(std::time::Duration::from_millis(Self::DEFAULT_READ_TIMEOUT_MILLIS)))?;
         
         Ok(Self {
             stream
@@ -38,13 +44,13 @@ impl WitcherConnection {
     }
 
 
-    pub fn set_read_timeout(&mut self, timeout: Option<Duration>) -> anyhow::Result<()> {
-        self.stream.set_read_timeout(timeout)?;
+    pub fn set_read_timeout(&mut self, timeout: Duration) -> anyhow::Result<()> {
+        self.stream.set_read_timeout(Some(timeout))?;
         Ok(())
     }
 
-    pub fn get_read_timeout(&self) -> anyhow::Result<Option<Duration>> {
-        let timeout = self.stream.read_timeout()?;
+    pub fn get_read_timeout(&self) -> anyhow::Result<Duration> {
+        let timeout = self.stream.read_timeout()?.context("No timeout set")?;
         Ok(timeout)
     }
 

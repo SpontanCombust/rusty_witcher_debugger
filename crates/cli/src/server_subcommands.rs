@@ -58,7 +58,7 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
         .context(format!("Failed to connect to the game on address {}.\n\
                           Make sure the game is running and that it was launched with following flags: -net -debugscripts.", ip.to_string()))?;
 
-    connection.set_read_timeout(Some(Duration::from_millis(options.response_timeout))).unwrap();
+    connection.set_read_timeout(Duration::from_millis(options.response_timeout)).unwrap();
 
 
     let client = WitcherClient::new(connection);
