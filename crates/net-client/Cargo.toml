@@ -9,3 +9,6 @@ authors.workspace = true
 rw3d_net = { path = "../net" }
 anyhow.workspace = true
 dashmap.workspace = true
+
+[dev-dependencies]
+rw3d_mock_server = { path = "../mock-server" }
