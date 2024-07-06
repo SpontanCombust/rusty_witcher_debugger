@@ -27,10 +27,9 @@ impl WitcherClient {
 
     /// Start a thread that will poll for messages sent by the server.
     /// This should be coupled with the call to [`Self::stop`] at the end of client's lifetime.
-    /// `poll_rate` decides how often messages are polled for. Pass None to use a default value.
     /// 
     /// Will error if the client was already started before.
-    pub fn start(&self, poll_rate: Option<std::time::Duration>) -> anyhow::Result<()> {
+    pub fn start(&self) -> anyhow::Result<()> {
         let mut current_router_thread = self.router_thread.lock().unwrap();
         if current_router_thread.is_some() {
             bail!("Client has been started before")
@@ -40,7 +39,7 @@ impl WitcherClient {
         let cancel_token = self.router_cancel_token.clone();
         let read_conn = self.write_conn.lock().unwrap().try_clone().context("Failed to clone the connection")?;
 
-        let router_thread = std::thread::spawn(move || router.event_loop(read_conn, poll_rate, cancel_token));
+        let router_thread = std::thread::spawn(move || router.event_loop(read_conn, cancel_token));
         *current_router_thread = Some(router_thread);
         Ok(())
     }

@@ -13,8 +13,6 @@ pub(crate) struct Router {
 }
 
 impl Router {
-    const DEFAULT_POLL_RATE_MILLIS: u64 = 500;
-
     pub fn new() -> Self {
         Self {
             id_registry: Mutex::new(MessageIdRegistry::new()),
@@ -49,10 +47,7 @@ impl Router {
         *raw_handler = Some(Box::new(RawRouteHandler::new(callback)));
     }
 
-    pub fn event_loop(&self, mut read_conn: WitcherConnection, poll_rate: Option<std::time::Duration>, cancel_token: Arc<AtomicBool>) -> anyhow::Result<()> {
-        read_conn.set_nonblocking(true)?;
-        let poll_rate = poll_rate.unwrap_or(std::time::Duration::from_millis(Self::DEFAULT_POLL_RATE_MILLIS));
-
+    pub fn event_loop(&self, mut read_conn: WitcherConnection, cancel_token: Arc<AtomicBool>) -> anyhow::Result<()> {
         loop {
             if cancel_token.load(std::sync::atomic::Ordering::Relaxed) {
                 break;
@@ -76,8 +71,6 @@ impl Router {
                         }
                     }
                 }
-            } else {
-                std::thread::sleep(poll_rate);
             }
         }
 

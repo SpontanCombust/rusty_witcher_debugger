@@ -55,11 +55,6 @@ impl WitcherConnection {
         Ok(timeout)
     }
 
-    pub fn set_nonblocking(&self, nonblocking: bool) -> anyhow::Result<()> {
-        self.stream.set_nonblocking(nonblocking)?;
-        Ok(())
-    }
-
 
     pub fn send(&mut self, packet: WitcherPacket) -> anyhow::Result<()> {
         const BUFFER_SIZE: usize = 1024;
@@ -81,7 +76,7 @@ impl WitcherConnection {
             Ok(peeked) => {
                 Ok(peeked >= peek_buffer.len())
             }
-            Err(err) if matches!(err.kind(), std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock) => {
+            Err(err) if matches!(err.kind(), std::io::ErrorKind::TimedOut) => {
                 Ok(false)
             },
             Err(err) => {

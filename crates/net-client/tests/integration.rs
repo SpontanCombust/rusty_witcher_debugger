@@ -18,7 +18,7 @@ fn integration_test() -> anyhow::Result<()> {
 
     let conn = WitcherConnection::connect_timeout(Ipv4Addr::LOCALHOST.into(), Duration::from_secs(1))?;
     let client = WitcherClient::new(conn);
-    client.start(None)?;
+    client.start()?;
 
 
     client.listen_to_all_namespaces()?;
