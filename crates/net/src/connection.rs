@@ -29,6 +29,7 @@ impl WitcherConnection {
     pub fn connect_timeout(ip: IpAddr, timeout: Duration) -> anyhow::Result<Self> {
         let addr = SocketAddr::new(ip, Self::GAME_PORT);
         let stream = TcpStream::connect_timeout(&addr, timeout)?;
+        stream.set_read_timeout(Some(std::time::Duration::from_millis(Self::DEFAULT_READ_TIMEOUT_MILLIS)))?;
 
         Ok(Self {
             stream
