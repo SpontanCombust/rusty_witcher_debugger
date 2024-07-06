@@ -62,7 +62,7 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
 
 
     let client = WitcherClient::new(connection);
-    client.start().context("Failed to start up the client")?;
+    client.start(None).context("Failed to start up the client")?;
 
     if !options.no_delay { thread::sleep( Duration::from_millis(500) ) }
     println_log("Successfully connected to the game and started the client!");
