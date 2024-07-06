@@ -25,7 +25,7 @@ impl WitcherClient {
         }
     }
 
-    /// Start a thread that will poll for messages sent by the server.
+    /// Initializes communication with the server.
     /// This should be coupled with the call to [`Self::stop`] at the end of client's lifetime.
     /// 
     /// Will error if the client was already started before.
@@ -41,6 +41,9 @@ impl WitcherClient {
 
         let router_thread = std::thread::spawn(move || router.event_loop(read_conn, cancel_token));
         *current_router_thread = Some(router_thread);
+
+        self.listen_to_all_namespaces()?;
+
         Ok(())
     }
 
@@ -48,7 +51,7 @@ impl WitcherClient {
         self.router_thread.lock().unwrap().is_some()
     }
 
-    /// Stop the thread that polls for messages from the server.
+    /// Stop communication with the server.
     /// 
     /// Will error if the client has not been started yet.
     pub fn stop(&self) -> anyhow::Result<()> {
@@ -72,43 +75,6 @@ impl WitcherClient {
     pub fn on_raw_packet<F>(&self, callback: F)
     where F: FnMut(WitcherPacket) + Send + Sync + 'static {
         self.router.set_raw_packet_callback(callback)
-    }
-
-    /// Notify the server to send back messages concerning given namespaces.
-    /// This is necessary for responses to be received by the client.
-    /// 
-    /// To listen to all namespaces use [`Self::listen_to_all_namespaces`].
-    #[inline]
-    pub fn listen_to_namespace(&self, params: ListenToNamespaceParams) -> anyhow::Result<()> {
-        self.send_notification::<ListenToNamespace>(params)
-    }
-
-    /// Notify the server to send back messages.
-    /// This is necessary for responses to be received by the client and should be called after creating it.
-    pub fn listen_to_all_namespaces(&self) -> anyhow::Result<()> {
-        self.send_notification::<ListenToNamespace>(ListenToNamespaceParams {
-            namesp: WitcherNamespace::Config
-        })?;
-        self.send_notification::<ListenToNamespace>(ListenToNamespaceParams {
-            namesp: WitcherNamespace::Remote
-        })?;
-        self.send_notification::<ListenToNamespace>(ListenToNamespaceParams {
-            namesp: WitcherNamespace::ScriptCompiler
-        })?;
-        self.send_notification::<ListenToNamespace>(ListenToNamespaceParams {
-            namesp: WitcherNamespace::ScriptDebugger
-        })?;
-        self.send_notification::<ListenToNamespace>(ListenToNamespaceParams {
-            namesp: WitcherNamespace::ScriptProfiler
-        })?;
-        self.send_notification::<ListenToNamespace>(ListenToNamespaceParams {
-            namesp: WitcherNamespace::Scripts
-        })?;
-        self.send_notification::<ListenToNamespace>(ListenToNamespaceParams {
-            namesp: WitcherNamespace::Utility
-        })?;
-
-        Ok(())
     }
 
     /// Send a notification to the server to recompile scripts.
@@ -165,7 +131,45 @@ impl WitcherClient {
     }
 
 
-    
+
+    /// Notify the server to send back messages concerning given namespaces.
+    /// This is necessary for responses to be received by the client.
+    /// 
+    /// To listen to all namespaces use [`Self::listen_to_all_namespaces`].
+    #[inline]
+    fn listen_to_namespace(&self, params: ListenToNamespaceParams) -> anyhow::Result<()> {
+        self.send_notification::<ListenToNamespace>(params)
+    }
+
+    /// Notify the server to send back messages.
+    /// This is necessary for responses to be received by the client and should be called after creating it.
+    fn listen_to_all_namespaces(&self) -> anyhow::Result<()> {
+        self.listen_to_namespace(ListenToNamespaceParams {
+            namesp: WitcherNamespace::Config
+        })?;
+        self.listen_to_namespace(ListenToNamespaceParams {
+            namesp: WitcherNamespace::Remote
+        })?;
+        self.listen_to_namespace(ListenToNamespaceParams {
+            namesp: WitcherNamespace::ScriptCompiler
+        })?;
+        self.listen_to_namespace(ListenToNamespaceParams {
+            namesp: WitcherNamespace::ScriptDebugger
+        })?;
+        self.listen_to_namespace(ListenToNamespaceParams {
+            namesp: WitcherNamespace::ScriptProfiler
+        })?;
+        self.listen_to_namespace(ListenToNamespaceParams {
+            namesp: WitcherNamespace::Scripts
+        })?;
+        self.listen_to_namespace(ListenToNamespaceParams {
+            namesp: WitcherNamespace::Utility
+        })?;
+
+        Ok(())
+    }
+
+
     fn send_notification<N>(&self, params: N::Body) -> anyhow::Result<()> 
     where N: Notification + Send + Sync + 'static {
         let packet = N::assemble_packet(params);

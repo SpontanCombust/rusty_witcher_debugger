@@ -61,15 +61,13 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
     connection.set_read_timeout(Duration::from_millis(options.response_timeout)).unwrap();
 
 
+    println_log("Initializing the client...");
     let client = WitcherClient::new(connection);
     client.start().context("Failed to start up the client")?;
 
     if !options.no_delay { thread::sleep( Duration::from_millis(500) ) }
     println_log("Successfully connected to the game and started the client!");
     
-
-    println_log("Setting up listeners...");
-    client.listen_to_all_namespaces().context("Failed to set up listeners")?;
 
     if options.verbose {
         client.on_raw_packet(print_raw_packet);

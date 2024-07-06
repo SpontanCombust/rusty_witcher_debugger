@@ -20,9 +20,6 @@ fn integration_test() -> anyhow::Result<()> {
     let client = WitcherClient::new(conn);
     client.start()?;
 
-
-    client.listen_to_all_namespaces()?;
-
     let packets_received = Arc::new(AtomicUsize::new(0));
     let packets_received_cl = packets_received.clone();
     client.on_raw_packet(move |_| {
