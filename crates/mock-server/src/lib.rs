@@ -12,6 +12,9 @@ pub struct MockWitcherServer {
 type ServiceMap = HashMap<MessageId, Box<dyn Service + Send + Sync>>;
 
 impl MockWitcherServer {
+    const LISTEN_INTERVAL_MILLIS: u64 = 500;
+    const PEEK_INTERVAL_MILLIS: u64 = 100;
+
     pub fn new() -> anyhow::Result<Arc<Self>> {
         let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, WitcherConnection::GAME_PORT))?;
         listener.set_nonblocking(true).unwrap();
@@ -66,11 +69,11 @@ impl MockWitcherServer {
                         self_clone.serve_for(socket)
                     });
                 }
-                Err(err) if err.kind() != std::io::ErrorKind::WouldBlock => {
-                    eprintln!("Client failed to connect: {}", err);
+                Err(err) if err.kind() == std::io::ErrorKind::WouldBlock => {
+                    std::thread::sleep(std::time::Duration::from_millis(Self::LISTEN_INTERVAL_MILLIS));
                 },
-                _ => {
-                    std::thread::sleep(std::time::Duration::from_millis(500));
+                Err(err) => {
+                    eprintln!("Client failed to connect: {}", err);
                 }
             }
         }
@@ -78,9 +81,21 @@ impl MockWitcherServer {
 
     pub fn serve_for(&self, mut client_socket: TcpStream) -> anyhow::Result<()> {
         loop {
-            let packet = WitcherPacket::decode_from(&mut client_socket)?;
-            if let Some(service) = self.id_registry.probe_message_id(&packet).and_then(|id| self.services.get(&id)) {
-                service.accept_packet(packet, &mut client_socket);
+            match client_socket.peek(&mut [0u8; 6]) {
+                Ok(_) => {
+                    let packet = WitcherPacket::decode_from(&mut client_socket)?;
+                    // println!("Received packet: \n{:?}", packet);
+                    if let Some(service) = self.id_registry.probe_message_id(&packet).and_then(|id| self.services.get(&id)) {
+                        service.accept_packet(packet, &mut client_socket);
+                    }
+                }
+                Err(err) if err.kind() == std::io::ErrorKind::WouldBlock => {
+                    std::thread::sleep(std::time::Duration::from_millis(Self::PEEK_INTERVAL_MILLIS));
+                },
+                Err(err) => {
+                    eprintln!("{}", err);
+                    break Err(err.into());
+                }
             }
         }
     }
