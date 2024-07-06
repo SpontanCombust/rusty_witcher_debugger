@@ -1,0 +1,14 @@
+[package]
+name = "rw3d_net_client"
+description = "Witcher 3 network client"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+rw3d_net = { path = "../net" }
+anyhow.workspace = true
+dashmap.workspace = true
+
+[dev-dependencies]
+rw3d_mock_server = { path = "../mock-server" }

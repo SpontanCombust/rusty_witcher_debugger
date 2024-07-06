@@ -1,0 +1,9 @@
+[package]
+name = "rw3d_scriptslog"
+description = "Witcher 3 scriptslog tailing"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+directories.workspace = true

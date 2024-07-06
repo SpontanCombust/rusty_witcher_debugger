@@ -1,0 +1,11 @@
+[package]
+name = "rw3d_mock_server"
+description = "Mock server for testing"
+version.workspace = true
+edition.workspace = true
+authors.workspace = true
+
+[dependencies]
+rw3d_net = { path = "../net" }
+anyhow.workspace = true
+dashmap.workspace = true
