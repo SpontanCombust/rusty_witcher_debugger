@@ -5,7 +5,7 @@ use dashmap::DashMap;
 use rw3d_net::{connection::WitcherConnection, messages::*, protocol::WitcherPacket};
 
 
-pub struct Router {
+pub(crate) struct Router {
     id_registry: Mutex<MessageIdRegistry>,
     raw_packet_handler: Mutex<Option<Box<dyn RouteHandler + Send + Sync>>>,
     response_handlers: DashMap<MessageId, VecDeque<Box<dyn RouteHandler + Send + Sync>>>,

@@ -25,7 +25,10 @@ impl WitcherClient {
         }
     }
 
-    /// Will error if the client was already started before
+    /// Start a thread that will poll for messages sent by the server.
+    /// This should be coupled with the call to [`Self::stop`] at the end of client's lifetime.
+    /// 
+    /// Will error if the client was already started before.
     pub fn start(&self) -> anyhow::Result<()> {
         let mut current_router_thread = self.router_thread.lock().unwrap();
         if current_router_thread.is_some() {
@@ -45,7 +48,9 @@ impl WitcherClient {
         self.router_thread.lock().unwrap().is_some()
     }
 
-    /// Will error if the client has not been started yet
+    /// Stop the thread that polls for messages from the server.
+    /// 
+    /// Will error if the client has not been started yet.
     pub fn stop(&self) -> anyhow::Result<()> {
         let mut current_router_thread = self.router_thread.lock().unwrap();
         if current_router_thread.is_none() {
@@ -62,20 +67,24 @@ impl WitcherClient {
     }
 
 
-
-    /// The callback will be ivoked on every packet received if it is set.
+    /// Set a callback that will be ivoked on every raw packet received from the server.
     #[inline]
     pub fn on_raw_packet<F>(&self, callback: F)
     where F: FnMut(WitcherPacket) + Send + Sync + 'static {
         self.router.set_raw_packet_callback(callback)
     }
 
-
+    /// Notify the server to send back messages concerning given namespaces.
+    /// This is necessary for responses to be received by the client.
+    /// 
+    /// To listen to all namespaces use [`Self::listen_to_all_namespaces`].
     #[inline]
     pub fn listen_to_namespace(&self, params: ListenToNamespaceParams) -> anyhow::Result<()> {
         self.send_notification::<ListenToNamespace>(params)
     }
 
+    /// Notify the server to send back messages.
+    /// This is necessary for responses to be received by the client and should be called after creating it.
     pub fn listen_to_all_namespaces(&self) -> anyhow::Result<()> {
         self.send_notification::<ListenToNamespace>(ListenToNamespaceParams {
             namesp: WitcherNamespace::Config
@@ -102,37 +111,54 @@ impl WitcherClient {
         Ok(())
     }
 
+    /// Send a notification to the server to recompile scripts.
     #[inline]
     pub fn reload_scripts(&self) -> anyhow::Result<()> {
         self.send_notification::<ReloadScripts>(())
     }
 
+    /// Set a callback that will be invoked for script recompilation progress notifications sent from the server.
     #[inline]
     pub fn on_scripts_reload_progress<F>(&self, callback: F)
     where F: FnMut(ScriptsReloadProgressParams) + Send + Sync + 'static {
         self.on_notification::<ScriptsReloadProgress, F>(callback)
     }
 
+    /// Send a request for the path to content0's script root.
+    /// 
+    /// Will block until the response is received or client waits for too long (based on connection's read_timeout).
     #[inline]
     pub fn scripts_root_path(&self) -> anyhow::Result<ScriptsRootPathResult> {
         self.send_request::<ScriptsRootPath>(())
     }
 
+    /// Send a request to execute an exec function.
+    /// 
+    /// Will block until the response is received or client waits for too long (based on connection's read_timeout).
     #[inline]
     pub fn execute_command(&self, params: ExecuteCommandParams) -> anyhow::Result<ExecuteCommandResult> {
         self.send_request::<ExecuteCommand>(params)
     }
 
+    /// Send a request to retrieve information about script packages detected by the game (vanilla and modded).
+    /// 
+    /// Will block until the response is received or client waits for too long (based on connection's read_timeout).
     #[inline]
     pub fn script_packages(&self) -> anyhow::Result<ScriptPackagesResult> {
         self.send_request::<ScriptPackages>(())
     }
 
+    /// Send a request for the breakdown of opcodes in a function.
+    /// 
+    /// Will block until the response is received or client waits for too long (based on connection's read_timeout).
     #[inline]
     pub fn opcodes(&self, params: OpcodesParams) -> anyhow::Result<OpcodesResult> {
         self.send_request::<Opcodes>(params)
     }
 
+    /// Send a request for the list of internal configuration vars.
+    /// 
+    /// Will block until the response is received or client waits for too long (based on connection's read_timeout).
     #[inline]
     pub fn config_vars(&self, params: ConfigVarsParams) -> anyhow::Result<ConfigVarsResult> {
         self.send_request::<ConfigVars>(params)
@@ -172,5 +198,13 @@ impl WitcherClient {
           F: FnMut(N::Body) + Send + Sync + 'static {
 
         self.router.set_notification_callback::<N, F>(callback);
+    }
+}
+
+
+impl Drop for WitcherClient {
+    fn drop(&mut self) {
+        // if the client was already stopped this will return Err but nothing besides that
+        let _ = self.stop();
     }
 }
