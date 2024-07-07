@@ -24,15 +24,15 @@ jobs:
       uses: actions-rs/cargo@v1
       with:
         command: build
-        args: --release --target=x86_64-pc-windows-msvc
+        args: --package rw3d_cli --release --target=x86_64-pc-windows-msvc
     - name: Zip the executable
       uses: papeloto/action-zip@v1
       with:
         files: "target/x86_64-pc-windows-msvc/release/rw3d_cli.exe"
-        dest: "Rusty Witcher 3 Debugger CLI.zip"
+        dest: "rw3d_cli_${{ github.ref_name }}.zip"
     - name: Create draft release
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "Rusty Witcher 3 Debugger CLI.zip"
+        artifacts: "rw3d_cli_${{ github.ref_name }}.zip"
         draft: true
         generateReleaseNotes: true
