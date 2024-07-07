@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 
 use anyhow::Context;
+#[cfg(feature = "serde")]
+use serde::{Serialize, Deserialize};
 
 use crate::protocol::*;
 use super::{Message, WitcherNamespace};
@@ -77,6 +79,7 @@ impl DisassemblePayload for ScriptsRootPathResponseId {
 
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ScriptsRootPathResult {
     pub abs_path: PathBuf
 }
@@ -139,6 +142,7 @@ impl DisassemblePayload for ExecuteCommandId {
 
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ExecuteCommandParams {
     pub cmd: String
 }
@@ -194,6 +198,7 @@ impl DisassemblePayload for ExecuteCommandResponseId {
 
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum ExecuteCommandResult {
     Success {
         log_output: Option<Vec<String>>
@@ -322,11 +327,13 @@ impl DisassemblePayload for ScriptPackagesResponseId {
 
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ScriptPackagesResult {
     pub packages: Vec<ScriptPackageInfo>
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ScriptPackageInfo {
     pub package_name: String,
     pub abs_scripts_root_path: PathBuf
@@ -403,6 +410,7 @@ impl DisassemblePayload for OpcodesId {
 
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct OpcodesParams {
     pub func_name: String,
     pub class_name: Option<String>,
@@ -473,11 +481,13 @@ impl DisassemblePayload for OpcodesResponseId {
 
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct OpcodesResult {
     pub breakdowns: Vec<OpcodeBreakdown>
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct OpcodeBreakdown {
     pub line: i32,
     pub opcodes: Vec<String>
@@ -568,6 +578,7 @@ impl DisassemblePayload for ConfigVarsId {
 
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ConfigVarsParams {
     pub section_filter: Option<String>,
     pub name_filter: Option<String>
@@ -630,11 +641,13 @@ impl DisassemblePayload for ConfigVarsResponseId {
 
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ConfigVarsResult {
     pub vars: Vec<ConfigVarInfo>
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ConfigVarInfo {
     pub section: String,
     pub name: String,

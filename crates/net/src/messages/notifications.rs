@@ -1,6 +1,8 @@
 use std::path::PathBuf;
 
 use anyhow::{bail, Context};
+#[cfg(feature = "serde")]
+use serde::{Serialize, Deserialize};
 
 use crate::protocol::*;
 use super::{Message, WitcherNamespace};
@@ -38,6 +40,7 @@ impl DisassemblePayload for ListenToNamespaceId {
 
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub struct ListenToNamespaceParams {
     pub namesp: WitcherNamespace
 }
@@ -122,6 +125,7 @@ impl DisassemblePayload for ScriptsReloadProgressId {
 
 
 #[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum ScriptsReloadProgressParams {
     Started,
     Log {

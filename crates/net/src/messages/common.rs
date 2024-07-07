@@ -1,9 +1,12 @@
 use strum_macros::{AsRefStr, EnumString};
+#[cfg(feature = "serde")]
+use serde::{Serialize, Deserialize};
 
 use crate::protocol::*;
 
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, AsRefStr, EnumString)]
+#[cfg_attr(feature = "serde", derive(Serialize, Deserialize))]
 pub enum WitcherNamespace {
     #[strum(serialize = "ScriptDebugger")]
     ScriptDebugger,
