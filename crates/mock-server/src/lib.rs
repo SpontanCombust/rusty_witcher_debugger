@@ -13,7 +13,7 @@ type ServiceMap = HashMap<MessageId, Box<dyn Service + Send + Sync>>;
 
 impl MockWitcherServer {
     const LISTEN_INTERVAL_MILLIS: u64 = 500;
-    const PEEK_INTERVAL_MILLIS: u64 = 100;
+    const READ_TIMEOUT_MILLIS: u64 = 100;
 
     pub fn new() -> anyhow::Result<Arc<Self>> {
         let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, WitcherConnection::GAME_PORT))?;
@@ -64,9 +64,13 @@ impl MockWitcherServer {
                 Ok((socket, addr)) => {
                     println!("Client connected on address {}", addr);
     
+                    socket.set_nonblocking(false).unwrap();
+                    socket.set_read_timeout(Some(std::time::Duration::from_millis(Self::READ_TIMEOUT_MILLIS))).unwrap();
                     let self_clone = self.clone();
-                    std::thread::spawn(move || -> anyhow::Result<()> {
-                        self_clone.serve_for(socket)
+                    std::thread::spawn(move || {
+                        if let Err(err) = self_clone.serve_for(socket) {
+                            eprintln!("Server abruptly lost connection to the client: {}", err);
+                        }
                     });
                 }
                 Err(err) if err.kind() == std::io::ErrorKind::WouldBlock => {
@@ -89,12 +93,11 @@ impl MockWitcherServer {
                         service.accept_packet(packet, &mut client_socket);
                     }
                 }
-                Err(err) if err.kind() == std::io::ErrorKind::WouldBlock => {
-                    std::thread::sleep(std::time::Duration::from_millis(Self::PEEK_INTERVAL_MILLIS));
-                },
                 Err(err) => {
-                    eprintln!("{}", err);
-                    break Err(err.into());
+                    if !matches!(err.kind(), std::io::ErrorKind::WouldBlock | std::io::ErrorKind::TimedOut) {
+
+                        break Err(err.into());
+                    }
                 }
             }
         }
