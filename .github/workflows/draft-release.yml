@@ -9,8 +9,17 @@ env:
 
 jobs:
   build:
-    runs-on: windows-latest
+    strategy:
+      matrix:
+        include:
+          - os: ubuntu-latest
+            target: x86_64-unknown-linux-gnu
+            exec_name: rw3d_cli
+          - os: windows-latest
+            target: x86_64-pc-windows-msvc
+            exec_name: rw3d_cli.exe
 
+    runs-on: ${{ matrix.os }}
     steps:
     - name: Checkout
       uses: actions/checkout@v2
@@ -18,21 +27,41 @@ jobs:
       uses: actions-rs/toolchain@v1
       with:
         toolchain: stable
-        target: x86_64-pc-windows-msvc
+        target: ${{ matrix.target }}
         override: true
     - name: Build with Cargo
       uses: actions-rs/cargo@v1
       with:
         command: build
-        args: --package rw3d_cli --release --target=x86_64-pc-windows-msvc
+        args: --package rw3d_cli --release --target ${{ matrix.target }}
+
     - name: Zip the executable
       uses: papeloto/action-zip@v1
       with:
-        files: "target/x86_64-pc-windows-msvc/release/rw3d_cli.exe"
-        dest: "rw3d_cli_${{ github.ref_name }}.zip"
-    - name: Create draft release
+        files: "target/${{ matrix.target }}/release/${{ matrix.exec_name }}"
+        dest: "rw3d_cli-${{ github.ref_name }}-${{ matrix.target }}.zip"
+    - name: Upload artifacts
+      uses: actions/upload-artifact@v2
+      with:
+        name: ${{ matrix.target }}
+        path: "*.zip"
+        if-no-files-found: error
+
+  publish:
+    runs-on: ubuntu-latest
+    needs: build
+    if: success()     
+
+    steps:
+    - name: Download artifacts
+      uses: actions/download-artifact@v2
+
+    - name: Prepare artifact list for release action
+      run: echo "ARTIFACTS=$(echo $(find . -iname "*.zip") | sed "s/ /,/g")" >> $GITHUB_ENV
+    - name: Create draft release on GitHub
       uses: ncipollo/release-action@v1
       with:
-        artifacts: "rw3d_cli_${{ github.ref_name }}.zip"
+        artifacts: "${{ env.ARTIFACTS }}"
         draft: true
+        allowUpdates: true
         generateReleaseNotes: true
