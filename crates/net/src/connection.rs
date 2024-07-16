@@ -76,7 +76,7 @@ impl WitcherConnection {
             Ok(peeked) => {
                 Ok(peeked >= peek_buffer.len())
             }
-            Err(err) if matches!(err.kind(), std::io::ErrorKind::TimedOut) => {
+            Err(err) if matches!(err.kind(), std::io::ErrorKind::TimedOut | std::io::ErrorKind::WouldBlock) => {
                 Ok(false)
             },
             Err(err) => {
