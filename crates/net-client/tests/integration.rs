@@ -16,6 +16,9 @@ fn integration_test() -> anyhow::Result<()> {
         Ok(())
     });
 
+    // wait for the server to set up
+    std::thread::sleep(std::time::Duration::from_millis(100));
+
     let conn = WitcherConnection::connect_timeout(Ipv4Addr::LOCALHOST.into(), Duration::from_secs(1))?;
     let client = WitcherClient::new(conn);
     client.start()?;
