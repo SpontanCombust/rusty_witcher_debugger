@@ -11,13 +11,13 @@ pub struct WitcherConnection {
 }
 
 impl WitcherConnection {
-    pub const GAME_PORT: u16 = 37001;
     /// A read timeout is necessary to be able to shut down the connection
     /// Without it it would block infinitely until it would receive data or the connection was severed
     pub const DEFAULT_READ_TIMEOUT_MILLIS: u64 = 2000;
 
-    pub fn connect(ip: IpAddr) -> anyhow::Result<Self> {
-        let addr = SocketAddr::new(ip, Self::GAME_PORT);
+
+    pub fn connect(ip: IpAddr, port: WitcherPort) -> anyhow::Result<Self> {
+        let addr = SocketAddr::new(ip, port.as_number());
         let stream = TcpStream::connect(addr)?;
         stream.set_read_timeout(Some(std::time::Duration::from_millis(Self::DEFAULT_READ_TIMEOUT_MILLIS)))?;
         
@@ -26,8 +26,8 @@ impl WitcherConnection {
         })
     }
 
-    pub fn connect_timeout(ip: IpAddr, timeout: Duration) -> anyhow::Result<Self> {
-        let addr = SocketAddr::new(ip, Self::GAME_PORT);
+    pub fn connect_timeout(ip: IpAddr, port: WitcherPort, timeout: Duration) -> anyhow::Result<Self> {
+        let addr = SocketAddr::new(ip, port.as_number());
         let stream = TcpStream::connect_timeout(&addr, timeout)?;
         stream.set_read_timeout(Some(std::time::Duration::from_millis(Self::DEFAULT_READ_TIMEOUT_MILLIS)))?;
 
@@ -89,5 +89,29 @@ impl WitcherConnection {
     pub fn shutdown(&self) -> anyhow::Result<()> {
         self.stream.shutdown(std::net::Shutdown::Both)?;
         Ok(())
+    }
+}
+
+
+/// Describes Witcher 3's connection port
+#[derive(Debug, Clone, PartialEq, Eq, Default)]
+pub enum WitcherPort {
+    /// Connect to the game running on its own
+    #[default]
+    Game,
+    /// Connect to the game running through REDKit
+    Editor,
+    /// Connect on a custom port
+    Custom(u16)
+}
+
+impl WitcherPort {
+    #[inline]
+    pub fn as_number(&self) -> u16 {
+        match self {
+            WitcherPort::Editor => 37000,
+            WitcherPort::Game => 37001,
+            WitcherPort::Custom(p) => *p,
+        }
     }
 }

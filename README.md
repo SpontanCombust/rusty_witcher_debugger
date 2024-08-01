@@ -30,6 +30,11 @@ Recompile game scripts.
 rw3d_cli.exe reload
 ```
 
+Recompile game scripts while developing a mod using REDkit.
+```ps1
+rw3d_cli.exe --target=editor reload
+```
+
 Remotely call an exec function from the game. Remember to use quotation marks for the command argument.
 ```ps1
 rw3d_cli.exe exec "spawn('Nekker', 3)"
