@@ -1,6 +1,6 @@
 use std::{collections::HashMap, net::{Ipv4Addr, TcpListener, TcpStream}, sync::{atomic::AtomicBool, Arc}};
 
-use rw3d_net::{connection::WitcherConnection, messages::{notifications::*, requests::*, Message, MessageId, MessageIdRegistry}, protocol::{Decode, Encode, WitcherPacket}};
+use rw3d_net::{connection::WitcherPort, messages::{notifications::*, requests::*, Message, MessageId, MessageIdRegistry}, protocol::{Decode, Encode, WitcherPacket}};
 
 
 pub struct MockWitcherServer {
@@ -16,7 +16,7 @@ impl MockWitcherServer {
     const READ_TIMEOUT_MILLIS: u64 = 100;
 
     pub fn new() -> anyhow::Result<Arc<Self>> {
-        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, WitcherConnection::GAME_PORT))?;
+        let listener = TcpListener::bind((Ipv4Addr::LOCALHOST, WitcherPort::Game.as_number()))?;
         listener.set_nonblocking(true).unwrap();
 
         let mut id_registry = MessageIdRegistry::new();
@@ -52,7 +52,7 @@ impl MockWitcherServer {
 
 
     pub fn listen(self: Arc<Self>, cancel_token: Arc<AtomicBool>) {
-        println!("Server listening on port {}", WitcherConnection::GAME_PORT);
+        println!("Server listening on port {}", WitcherPort::Game.as_number());
 
         loop {
             if cancel_token.load(std::sync::atomic::Ordering::Relaxed) {

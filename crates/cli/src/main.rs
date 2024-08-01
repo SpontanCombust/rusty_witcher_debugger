@@ -26,6 +26,10 @@ pub(crate) struct CliOptions {
     #[clap(long, default_value="127.0.0.1")]
     ip: String,
 
+    /// Select connection target
+    #[clap(long, value_enum, default_value="game")]
+    target: ConnectionTarget, //TODO fix display order
+
     /// Specify what logs are allowed to be printed to the standard output.
     /// Does not apply to output from the `scriptslog` command.
     #[clap(long, short='l', value_enum, default_value="all")]
@@ -43,6 +47,14 @@ pub(crate) struct CliOptions {
     /// It will also affect how quickly the program shuts down.
     #[clap(long, short='t', default_value_t=2000)] 
     response_timeout: u64,
+}
+
+#[derive(Debug, ArgEnum, Clone, Copy, PartialEq, Eq)]
+enum ConnectionTarget {
+    /// Connect to the game running on its own
+    Game,
+    /// Connect to the game running through REDkit editor
+    Editor
 }
 
 #[derive(Debug, ArgEnum, Clone, Copy, PartialEq, Eq)]

@@ -2,10 +2,10 @@ use std::{net::Ipv4Addr, str::FromStr, thread, time::Duration};
 
 use anyhow::Context;
 use clap::Subcommand;
-use rw3d_net::{connection::WitcherConnection, messages::requests::*};
+use rw3d_net::{connection::{WitcherConnection, WitcherPort}, messages::requests::*};
 use rw3d_net_client::WitcherClient;
 
-use crate::{logging::println_log, response_handling::*, CliOptions};
+use crate::{logging::println_log, response_handling::*, CliOptions, ConnectionTarget};
 
 
 /// Subcommands that require connection to game's socket and sending messages to it
@@ -52,11 +52,17 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
 
     const CONNECT_TIMEOUT_MILLIS: u64 = 5000; 
 
+    let port = if options.target == ConnectionTarget::Game {
+        WitcherPort::Game
+    } else {
+        WitcherPort::Editor
+    };
+
     println_log("Connecting to the game...");
     let mut connection = 
-        WitcherConnection::connect_timeout(ip.into(), Duration::from_millis(CONNECT_TIMEOUT_MILLIS))
-        .context(format!("Failed to connect to the game on address {}.\n\
-                          Make sure the game is running and that it was launched with following flags: -net -debugscripts.", ip.to_string()))?;
+        WitcherConnection::connect_timeout(ip.into(), port.clone(), Duration::from_millis(CONNECT_TIMEOUT_MILLIS))
+        .context(format!("Failed to connect to the game on address {}:{}.\n\
+                          Make sure the game is running and that it was launched with following flags: -net -debugscripts.", ip.to_string(), port.as_number()))?;
 
     connection.set_read_timeout(Duration::from_millis(options.response_timeout)).unwrap();
 

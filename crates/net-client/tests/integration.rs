@@ -1,7 +1,7 @@
 use std::{net::Ipv4Addr, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Arc}, time::Duration};
 
 use rw3d_mock_server::MockWitcherServer;
-use rw3d_net::{connection::WitcherConnection, messages::{notifications::*, requests::*}};
+use rw3d_net::{connection::{WitcherConnection, WitcherPort}, messages::{notifications::*, requests::*}};
 use rw3d_net_client::WitcherClient;
 
 
@@ -19,7 +19,7 @@ fn integration_test() -> anyhow::Result<()> {
     // wait for the server to set up
     std::thread::sleep(std::time::Duration::from_millis(100));
 
-    let conn = WitcherConnection::connect_timeout(Ipv4Addr::LOCALHOST.into(), Duration::from_secs(1))?;
+    let conn = WitcherConnection::connect_timeout(Ipv4Addr::LOCALHOST.into(), WitcherPort::Game, Duration::from_secs(1))?;
     let client = WitcherClient::new(conn);
     client.start()?;
 
