@@ -17,7 +17,11 @@ https://github.com/WolvenKit/WolvenKit
 
 ## Usage
 
-In order to use this tool make sure the game is running and that it was launched with following arguments: -net -debugscripts.
+In order to use this tool one of two requirements must be met:  
+1. The game must have been launched with following debug arguments[^1]: -net -debugscripts.
+2. A REDkit project must be opened
+
+[^1]: You can either create a shortcut to the executable and add those arguments at the end or configure launch parameters in Steam/GOG. 
 
 Print help information.
 ```ps1
@@ -30,9 +34,14 @@ Recompile game scripts.
 rw3d_cli.exe reload
 ```
 
-Recompile game scripts while developing a mod using REDkit.
+Recompile scripts specifically for an active REDkit project.
 ```ps1
 rw3d_cli.exe --target=editor reload
+```
+
+Recompile scripts specifically for a game being launched with debug arguments.
+```ps1
+rw3d_cli.exe --target=game reload
 ```
 
 Remotely call an exec function from the game. Remember to use quotation marks for the command argument.

@@ -26,8 +26,11 @@ pub(crate) struct CliOptions {
     #[clap(long, default_value="127.0.0.1", display_order=0)]
     ip: String,
 
-    /// Select connection target
-    #[clap(long, value_enum, default_value="game", display_order=1)]
+    /// Select connection target.
+    /// - game -  connect to the standalone game running with debug arguments,
+    /// - editor - connect to the game running in the REDkit editor,
+    /// - auto - try connecting to either the standalone game or one running in REDkit
+    #[clap(long, value_enum, default_value="auto", display_order=1, verbatim_doc_comment)]
     target: ConnectionTarget,
 
     /// The maximum amount of milliseconds that program should wait for the game to respond.
@@ -51,10 +54,12 @@ pub(crate) struct CliOptions {
 
 #[derive(Debug, ArgEnum, Clone, Copy, PartialEq, Eq)]
 enum ConnectionTarget {
-    /// Connect to the game running on its own
+    /// Connect to the standalone game running with debug arguments.
     Game,
-    /// Connect to the game running through REDkit editor
-    Editor
+    /// Connect to the game running through the REDkit editor.
+    Editor,
+    /// Try connecting to either the standalone game or one running through REDkit.
+    Auto
 }
 
 #[derive(Debug, ArgEnum, Clone, Copy, PartialEq, Eq)]

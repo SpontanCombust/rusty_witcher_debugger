@@ -7,7 +7,8 @@ use crate::protocol::*;
 
 #[derive(Debug)]
 pub struct WitcherConnection {
-    stream: TcpStream
+    stream: TcpStream,
+    pub port: WitcherPort
 }
 
 impl WitcherConnection {
@@ -22,7 +23,8 @@ impl WitcherConnection {
         stream.set_read_timeout(Some(std::time::Duration::from_millis(Self::DEFAULT_READ_TIMEOUT_MILLIS)))?;
         
         Ok(Self {
-            stream
+            stream,
+            port
         })
     }
 
@@ -32,7 +34,8 @@ impl WitcherConnection {
         stream.set_read_timeout(Some(std::time::Duration::from_millis(Self::DEFAULT_READ_TIMEOUT_MILLIS)))?;
 
         Ok(Self {
-            stream
+            stream,
+            port
         })
     }
 
@@ -40,7 +43,8 @@ impl WitcherConnection {
         let cloned_stream = self.stream.try_clone()?;
 
         Ok(Self {
-            stream: cloned_stream
+            stream: cloned_stream,
+            port: self.port.clone()
         })
     }
 
