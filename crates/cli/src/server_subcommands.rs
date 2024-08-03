@@ -1,6 +1,6 @@
 use std::{net::Ipv4Addr, str::FromStr, thread, time::Duration};
 
-use anyhow::Context;
+use anyhow::{bail, Context};
 use clap::Subcommand;
 use rw3d_net::{connection::{WitcherConnection, WitcherPort}, messages::requests::*};
 use rw3d_net_client::WitcherClient;
@@ -50,19 +50,13 @@ pub(crate) enum ServerSubcommands {
 pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOptions ) -> anyhow::Result<()> {
     let ip = Ipv4Addr::from_str(&options.ip).context("Invalid IPv4 address specified")?;
 
-    const CONNECT_TIMEOUT_MILLIS: u64 = 5000; 
-
-    let port = if options.target == ConnectionTarget::Game {
-        WitcherPort::Game
-    } else {
-        WitcherPort::Editor
-    };
-
     println_log("Connecting to the game...");
-    let mut connection = 
-        WitcherConnection::connect_timeout(ip.into(), port.clone(), Duration::from_millis(CONNECT_TIMEOUT_MILLIS))
-        .context(format!("Failed to connect to the game on address {}:{}.\n\
-                          Make sure the game is running and that it was launched with following flags: -net -debugscripts.", ip.to_string(), port.as_number()))?;
+
+    let mut connection = match options.target {
+        ConnectionTarget::Game => connect_to_standalone(ip),
+        ConnectionTarget::Editor => connect_to_redkit(ip),
+        ConnectionTarget::Auto => connect_try_both(ip),
+    }?;
 
     connection.set_read_timeout(Duration::from_millis(options.response_timeout)).unwrap();
 
@@ -148,4 +142,61 @@ pub(crate) fn handle_server_subcommand( cmd: ServerSubcommands, options: CliOpti
 
     println_log("\nShutting down client...");
     client.stop().context("Failed to shut down client connection")
+}
+
+
+const CONNECT_TIMEOUT_MILLIS: u64 = 5000; 
+
+fn connect_to_standalone(ip: Ipv4Addr) -> anyhow::Result<WitcherConnection> {
+    let port = WitcherPort::Game;
+
+    WitcherConnection::connect_timeout(ip.into(), port.clone(), Duration::from_millis(CONNECT_TIMEOUT_MILLIS))
+        .context(format!("Failed to connect to the game on address {}:{}.\n\
+                          Make sure the game is running and that it was launched with following debug flags: -net -debugscripts.", ip.to_string(), port.as_number()))
+}
+
+fn connect_to_redkit(ip: Ipv4Addr) -> anyhow::Result<WitcherConnection> {
+    let port = WitcherPort::Editor;
+
+    WitcherConnection::connect_timeout(ip.into(), port.clone(), Duration::from_millis(CONNECT_TIMEOUT_MILLIS))
+        .context(format!("Failed to connect to the game in REDkit on address {}:{}.\n\
+                          Make sure REDkit is running.", ip.to_string(), port.as_number()))
+}
+
+fn connect_try_both(ip: Ipv4Addr) -> anyhow::Result<WitcherConnection> {
+    let (conns_send, conns_recv) = std::sync::mpsc::channel::<(anyhow::Result<WitcherConnection>, WitcherPort)>();
+    
+    let connect_on_port = |port: WitcherPort| {
+        let sender = conns_send.clone();
+        std::thread::spawn(move || {
+            let conn = WitcherConnection::connect_timeout(ip.clone().into(), port.clone(), Duration::from_millis(CONNECT_TIMEOUT_MILLIS));
+            let _ = sender.send((conn, port));
+        })    
+    };
+
+    connect_on_port(WitcherPort::Game);
+    connect_on_port(WitcherPort::Editor);
+
+    let mut port_errors = String::new();
+    for _ in 0..2 {
+        match conns_recv.recv().context("Failed to establish any connection")? {
+            (Ok(conn), _) => {
+                return Ok(conn)
+            }
+            (Err(err), port) => {
+                let port_name = if port == WitcherPort::Game {
+                    "standalone"
+                } else {
+                    "editor"
+                };
+
+                port_errors.push_str(&format!("    [{}] {:?}\n", port_name, err));
+            }
+        }
+    }
+    
+    // no successfull connection has been established and only errors were received
+    bail!("Failed to connect to the game on address {}.\n\
+           Make sure either the REDkit is running or that the game was launched with following debug flags: -net -debugscripts.\n\n\
+           Caused by:\n{}", ip.to_string(), port_errors)
 }
