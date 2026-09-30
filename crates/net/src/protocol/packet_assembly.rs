@@ -181,12 +181,17 @@ impl WitcherPacketDisassembler {
 
     #[inline]
     pub fn string_utf16(&mut self) -> anyhow::Result<StringUtf16> {
-        self.pop()?.try_as_string_utf_16().map(|t| t.into_inner()).context("Type mismatch")
+        // Builds before the 5.0 update send these strings as UTF-16, 5.0 sends them as UTF-8
+        match self.pop()? {
+            WitcherPacketData::StringUTF16(t) => Ok(t.into_inner()),
+            WitcherPacketData::StringUTF8(t) => Ok(StringUtf16(t.into_inner().0)),
+            _ => bail!("Type mismatch"),
+        }
     }
 
     #[inline]
     pub fn fixed_string_utf16(&mut self, expected: &str) -> anyhow::Result<StringUtf16> {
-        let data = self.pop()?.try_as_string_utf_16().map(|t| t.into_inner()).context("Type mismatch")?;
+        let data = self.string_utf16()?;
         if data.as_str() != expected {
             bail!("Failed to match expected data: {expected}");
         }
@@ -226,5 +231,28 @@ impl AssemblePayload for () {
 impl DisassemblePayload for () {
     fn disassemble_payload(_: &mut WitcherPacketDisassembler) -> anyhow::Result<Self> {
         Ok(())
+    }
+}
+
+
+
+#[cfg(test)]
+mod test {
+    use super::*;
+
+    #[test]
+    fn string_utf16_accepts_utf8() {
+        let packet = WitcherPacketAssembler::new()
+            .string_utf16("Zażółć gęślą jaźń")
+            .string_utf8("Zażółć gęślą jaźń")
+            .string_utf8("C:\\scripts\\")
+            .int32(1)
+            .finish();
+
+        let mut dasm = WitcherPacketDisassembler::new(packet);
+        assert_eq!(dasm.string_utf16().unwrap().0, "Zażółć gęślą jaźń");
+        assert_eq!(dasm.string_utf16().unwrap().0, "Zażółć gęślą jaźń");
+        assert!(dasm.fixed_string_utf16("C:\\scripts\\").is_ok());
+        assert!(dasm.string_utf16().is_err());
     }
 }
